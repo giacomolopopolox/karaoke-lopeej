@@ -37,6 +37,8 @@ Web app per le serate karaoke di Lopee J.
 
 **Chiamata sul palco.** Quando premi **Avanti** o **Chiama sul palco**, le tre barre del logo attraversano lo schermo e appaiono selfie, nome e canzone. Il video parte quando premi **Play**.
 
+**Voto del pubblico.** In regia accendi **Voto aperto**. Quando premi Play, sul telefono degli ospiti compaiono 5 pulsanti con gli applausi (1 Delusione, 2 Zero entusiasmo, 3 Bene!, 4 Spettacolo!, 5 Standing ovation!). Ogni telefono vota una volta per esibizione e può cambiare voto finché si canta; chi canta non può votarsi. Sullo schermo si vede quanti voti sono arrivati, ma non la media. A fine canzone (o quando premi **Avanti**, oppure **Chiudi voto e mostra esito**) parte il pop-up con l'esito medio, grafica e suono diversi per ogni livello. In regia vedi la classifica, puoi proiettarla con **Classifica sullo schermo** e alla fine premere **Proclama il vincitore**. Per entrare in classifica servono almeno i voti minimi impostati (di base 3). Una canzone saltata con **Salta** non viene votata.
+
 ## Avvio sul tuo computer (facoltativo)
 
 ```

@@ -71,6 +71,12 @@
   .eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
   @keyframes eq{0%,100%{height:4px}50%{height:14px}}
   input[type=range]{accent-color:var(--lime);width:100%}
+  .rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+  .rank li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 10px;border-radius:4px;background:var(--surface-2);font-size:14px}
+  .rank li:first-child{background:var(--lime-soft);outline:1px solid var(--lime)}
+  .rank .p{font-family:var(--f-mono);color:var(--lime-ink);font-weight:700;text-align:center}
+  .rank .sc{font-family:var(--f-mono);font-weight:700;white-space:nowrap}
+  .rank .sc small{color:var(--muted);font-weight:500}
   .history > li{opacity:.75}
 </style>
 </head>
@@ -144,6 +150,17 @@
         </div>
         <div class="switch"><span><b>Selfie sullo schermo</b><br><span style="font-size:13px;color:var(--muted)">Se spento, sullo schermo compaiono solo le iniziali</span></span><button class="toggle" id="setSelfies" role="switch" aria-checked="true" aria-label="Selfie sullo schermo" type="button"></button></div>
         <div class="switch"><span><b>Sovraimpressioni durante la canzone</b><br><span style="font-size:13px;color:var(--muted)">Foto e nome di chi canta in alto a sinistra, QR in alto a destra. Spegnile se coprono il testo di un video</span></span><button class="toggle" id="setLive" role="switch" aria-checked="true" aria-label="Sovraimpressioni durante la canzone" type="button"></button></div>
+      </section>
+
+      <section class="card stack" id="voteCard">
+        <span class="label">Voto del pubblico</span>
+        <div class="switch"><span><b>Voto aperto</b><br><span style="font-size:13px;color:var(--muted)">Il pubblico vota dal telefono da 1 a 5 applausi; l'esito esplode sullo schermo a fine canzone</span></span><button class="toggle" id="voteOn" role="switch" aria-checked="false" aria-label="Voto del pubblico aperto" type="button"></button></div>
+        <div class="filler-now" id="voteNow"></div>
+        <div class="row"><button class="btn sm" id="voteReveal" type="button">Chiudi voto e mostra esito</button></div>
+        <div class="field"><label for="minVotes">Voti minimi per entrare in classifica</label><input type="number" id="minVotes" min="1" max="50"></div>
+        <div id="rankBox"></div>
+        <div class="switch"><span><b>Classifica sullo schermo</b><br><span style="font-size:13px;color:var(--muted)">Mostra la top 5 al posto della schermata principale</span></span><button class="toggle" id="rankOn" role="switch" aria-checked="false" aria-label="Classifica sullo schermo" type="button"></button></div>
+        <button class="btn primary" id="winnerBtn" type="button">🏆 Proclama il vincitore</button>
       </section>
 
       <section class="card stack">
@@ -300,7 +317,7 @@
     }).join("")}</ol>` : `<div class="empty"><strong>La coda è vuota</strong>Fai inquadrare il QR agli ospiti, oppure aggiungi un cantante dal riquadro qui accanto.</div>`;
 
     $("#histCount").textContent = h.length;
-    $("#histBox").innerHTML = h.length ? `<ol class="list history">${h.map((q) => `<li><span class="pos">${q.status === "skipped" ? "–" : "✓"}</span>${avatarHTML(q)}<div class="song"><b>${esc(q.title)}</b><span>${esc(q.artist || "")} · ${esc(q.singer)}</span></div><button class="icon-btn" title="Rimetti in coda" aria-label="Rimetti in coda" data-act="requeue" data-id="${q.id}">↺</button></li>`).join("")}</ol>` : `<div class="empty">Ancora nessuna esibizione.</div>`;
+    $("#histBox").innerHTML = h.length ? `<ol class="list history">${h.map((q) => `<li><span class="pos">${q.status === "skipped" ? "–" : "✓"}</span>${avatarHTML(q)}<div class="song"><b>${esc(q.title)}${q.score ? ` <span class="chip lime">${String(q.score.avg).replace(".", ",")} 👏 · ${q.score.count} voti</span>` : ""}</b><span>${esc(q.artist || "")} · ${esc(q.singer)}</span></div><button class="icon-btn" title="Rimetti in coda" aria-label="Rimetti in coda" data-act="requeue" data-id="${q.id}">↺</button></li>`).join("")}</ol>` : `<div class="empty">Ancora nessuna esibizione.</div>`;
 
     $("#sQueue").textContent = w.length;
     $("#sDone").textContent = S.queue.filter((q) => q.status === "done").length;
@@ -310,6 +327,7 @@
     $("#setOpen").setAttribute("aria-checked", String(!!S.settings.open));
     $("#setSelfies").setAttribute("aria-checked", String(S.settings.showSelfies !== false));
     $("#setLive").setAttribute("aria-checked", String(S.settings.liveOverlay !== false));
+    renderVote(cur);
     const fl = S.settings.filler || {};
     $("#fillerOn").setAttribute("aria-checked", String(fl.enabled !== false));
     sync("#fillerUrl", fl.url); sync("#fillerVol", fl.volume ?? 60); $("#fillerVolTxt").textContent = (fl.volume ?? 60) + "%";
@@ -323,6 +341,26 @@
     if (focusId) { const el = document.getElementById(focusId); if (el && el !== document.activeElement) { el.focus(); if (el.type === "text") { const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } }
   }
   function sync(sel, v) { const el = $(sel); if (document.activeElement !== el) el.value = v ?? ""; }
+  function renderVote(cur) {
+    const on = !!S.settings.voting;
+    $("#voteOn").setAttribute("aria-checked", String(on));
+    $("#rankOn").setAttribute("aria-checked", String(!!S.settings.showRanking));
+    sync("#minVotes", S.settings.minVotes ?? 3);
+    let msg;
+    if (!on) msg = "<span>Voto chiuso: accendilo per far votare il pubblico.</span>";
+    else if (!cur) msg = "<span>Nessuno sul palco.</span>";
+    else if (cur.score) msg = `<span>Esito mostrato: <b>${String(cur.score.avg).replace(".", ",")}</b> su 5 · ${cur.score.count} voti</span>`;
+    else if (cur.revealed) msg = "<span>Voto chiuso senza voti.</span>";
+    else if (cur.videoId && !cur.sang) msg = "<span>Il voto si apre quando premi Play.</span>";
+    else msg = `<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span>Si vota per <b>${esc(cur.singer)}</b>: ${cur.live ? `${cur.live.count} voti · media ${String(cur.live.avg).replace(".", ",")}` : "ancora nessun voto"}</span>`;
+    $("#voteNow").innerHTML = msg;
+    $("#voteReveal").disabled = !(on && cur && !cur.revealed && cur.live);
+    const r = S.ranking || [];
+    $("#rankBox").innerHTML = r.length
+      ? `<ol class="rank">${r.map((x, i) => `<li><span class="p">${i + 1}</span><div class="song"><b>${esc(x.singer)}</b><span>${esc(x.title)}</span></div><span class="sc">${String(x.avg).replace(".", ",")} <small>· ${x.count}</small></span></li>`).join("")}</ol>`
+      : `<div class="empty" style="padding:14px">La classifica compare dopo la prima esibizione con almeno ${S.settings.minVotes ?? 3} voti.</div>`;
+    $("#winnerBtn").disabled = !r.length;
+  }
   function renderFiller() {
     if (!S) return;
     const f = S.settings.filler || {}, p = player.filler || {};
@@ -397,6 +435,11 @@
   $("#fillerVis").onchange = (e) => emit("dj:settings", { filler: { visibility: e.target.value } });
   $("#fillerSkip").onclick = () => emit("dj:filler", { cmd: "skip" });
   $("#fillerPause").onclick = () => emit("dj:filler", { cmd: (player.filler || {}).paused ? "resume" : "pause" });
+  $("#voteOn").onclick = () => emit("dj:settings", { voting: !S.settings.voting });
+  $("#rankOn").onclick = () => emit("dj:settings", { showRanking: !S.settings.showRanking });
+  $("#minVotes").onchange = (e) => emit("dj:settings", { minVotes: e.target.value });
+  $("#voteReveal").onclick = () => emit("dj:reveal");
+  $("#winnerBtn").onclick = () => { emit("dj:winner"); toast("Vincitore proclamato sullo schermo"); };
   $("#setLive").onclick = () => emit("dj:settings", { liveOverlay: S.settings.liveOverlay === false });
   $("#setSelfies").onclick = () => emit("dj:settings", { showSelfies: S.settings.showSelfies === false });
   $("#setName").onchange = (e) => emit("dj:settings", { name: e.target.value });

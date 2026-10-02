@@ -88,6 +88,50 @@
   .start{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:30;padding:16px}
   .start .card{max-width:440px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
   .start .brand{font-size:26px;justify-content:center}
+
+  /* ---- voto: invito durante la canzone ---- */
+  .live-singer .vote-live{margin-top:6px;display:inline-flex;align-items:center;gap:8px;padding:3px 10px;border-radius:3px;background:var(--lime);color:var(--on-lime);font-family:var(--f-display);font-weight:700;font-size:clamp(12px,1.1vw,17px);letter-spacing:.06em;text-transform:uppercase}
+
+  /* ---- classifica ---- */
+  .board{list-style:none;margin:clamp(14px,2.4vh,28px) 0 0;padding:0;display:flex;flex-direction:column;gap:clamp(6px,1vh,12px);max-width:1100px}
+  .board li{display:grid;grid-template-columns:clamp(44px,4vw,72px) minmax(0,1fr) auto;gap:clamp(12px,1.4vw,24px);align-items:center;padding:clamp(8px,1.1vh,14px) clamp(12px,1.2vw,20px);background:rgba(23,27,17,.82);border-left:5px solid var(--line);border-radius:4px}
+  .board li:first-child{border-left-color:var(--lime);background:rgba(138,203,44,.14)}
+  .board .p{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,2.6vw,44px);color:var(--muted);text-align:center}
+  .board li:first-child .p{color:var(--lime)}
+  .board .nm{font-family:var(--f-display);font-weight:700;text-transform:uppercase;font-size:clamp(18px,2vw,34px);line-height:1.1;overflow-wrap:anywhere}
+  .board .tt{color:var(--muted);font-size:clamp(13px,1.2vw,19px)}
+  .board .sc{text-align:right;font-family:var(--f-display);font-weight:700;font-size:clamp(20px,2.2vw,38px)}
+  .board .sc small{display:block;font-family:var(--f-body);font-weight:500;font-size:clamp(11px,1vw,15px);color:var(--muted)}
+
+  /* ---- pop-up esplosivo dell'esito ---- */
+  .burst{position:fixed;inset:0;z-index:20;display:grid;place-items:center;overflow:hidden;cursor:pointer;
+    --c1:#8acb2c;--c2:#0b0e08;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--c1) 55%,#000) 0%,var(--c2) 70%)}
+  .burst[hidden]{display:none}
+  .burst .rays{position:absolute;width:250vmax;height:250vmax;left:50%;top:45%;translate:-50% -50%;opacity:0;
+    background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.10) 0deg 7deg,transparent 7deg 18deg);animation:spin 14s linear infinite,fadein .6s .2s forwards}
+  .burst canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .burst .card{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.6vh,18px);padding:24px;animation:boom .75s cubic-bezier(.2,1.5,.35,1) both}
+  .burst .face{width:clamp(110px,20vh,220px);aspect-ratio:1;border-radius:50%;background:var(--surface-2) center/cover no-repeat;border:6px solid #fff;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:clamp(40px,8vh,90px);color:var(--c1);box-shadow:0 0 0 10px rgba(0,0,0,.25),0 0 90px color-mix(in srgb,var(--c1) 70%,transparent)}
+  .burst .claps{font-size:clamp(40px,7.5vh,90px);letter-spacing:.06em;line-height:1}
+  .burst .claps span{display:inline-block;animation:clap .45s cubic-bezier(.2,1.8,.4,1) both}
+  .burst .claps span.off{opacity:.16;filter:grayscale(1)}
+  .burst .lv{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:.92;font-size:clamp(56px,11vw,190px);color:#fff;text-shadow:0 6px 0 rgba(0,0,0,.25),0 0 60px color-mix(in srgb,var(--c1) 80%,transparent);text-wrap:balance}
+  .burst .who{font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:clamp(20px,2.6vw,42px);margin:0;color:#fff}
+  .burst .meta{font-size:clamp(16px,1.8vw,28px);color:rgba(255,255,255,.8)}
+  .burst .meta b{color:#fff}
+  .burst .kick{font-family:var(--f-display);font-weight:600;letter-spacing:.24em;text-transform:uppercase;font-size:clamp(14px,1.6vw,24px);color:var(--c1);background:rgba(0,0,0,.35);padding:6px 16px;border-radius:3px}
+  .burst .podium{display:flex;gap:clamp(12px,2vw,32px);justify-content:center;margin-top:8px;font-size:clamp(14px,1.5vw,22px);color:rgba(255,255,255,.85)}
+  .burst.lv1{--c1:#6f86a6;--c2:#07090c}
+  .burst.lv1 .card{animation:boom .7s both,shake .5s .8s 2}
+  .burst.lv2{--c1:#8b9180;--c2:#0a0b09}
+  .burst.lv5 .lv,.burst.win .lv{animation:pulse 1.1s ease-in-out infinite}
+  .burst.win{--c1:#f5c542}
+  @keyframes boom{0%{transform:scale(.2) rotate(-6deg);opacity:0}60%{opacity:1}100%{transform:none}}
+  @keyframes clap{from{transform:scale(0) rotate(-30deg)}to{transform:none}}
+  @keyframes spin{to{rotate:360deg}}
+  @keyframes fadein{to{opacity:1}}
+  @keyframes shake{25%{translate:-14px 0}75%{translate:14px 0}}
+  @keyframes pulse{50%{transform:scale(1.06)}}
   @media (prefers-reduced-motion:reduce){.calling .wipe i{animation:none}.calling .hero > *{animation:none}}
 </style>
 </head>
@@ -125,6 +169,7 @@
   </div>
   <div class="tools"><button class="btn sm" id="fsBtn">Schermo intero</button></div>
 </div>
+<div class="burst" id="burst" hidden role="dialog" aria-live="assertive"><div class="rays"></div><canvas id="confetti"></canvas><div class="card" id="burstCard"></div></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/common.js"></script>
@@ -148,6 +193,8 @@
     socket.on("player:load", (d) => { pending = d; applyLoad(); });
     socket.on("player:cmd", (c) => command(c));
     socket.on("filler:cmd", (c) => fillerCommand(c));
+    socket.on("vote:result", (r) => showResult(r));
+    socket.on("vote:winner", (w) => showWinner(w));
   }
   $("#gateForm").addEventListener("submit", (e) => { e.preventDefault(); connect($("#pin").value); });
   const saved = store.get("karaoke-pin"); if (saved) connect(saved); else $("#gate").hidden = false;
@@ -155,6 +202,7 @@
   // ---------- player YouTube ----------
   $("#startBtn").onclick = () => {
     $("#start").hidden = true;
+    audio(); if (actx && actx.state === "suspended") actx.resume();
     const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
     try { document.documentElement.requestFullscreen(); } catch {}
   };
@@ -220,7 +268,7 @@
   function applyFiller() {
     if (!bgReady || !S) return;
     loadFillerSource();
-    const want = shouldFill(), vol = fillerCfg().volume ?? 60;
+    const want = shouldFill(), vol = (fillerCfg().volume ?? 60) * (duck ? 0.25 : 1);
     if (want && !bgPlaying) {
       bgPlaying = true; bgVol = 0; bg.setVolume(0);
       const pl = fillerCfg().listId && bgFirst ? bg.getPlaylist?.() : null;
@@ -229,7 +277,7 @@
       bgFirst = false;
       fade(vol, 2500); showFillerVideo();
     } else if (want && bgPlaying && !fading && Math.abs(bgVol - vol) > 1) {
-      bgVol = vol; bg.setVolume(vol);
+      fade(vol, 500);
     } else if (!want && bgPlaying) {
       bgPlaying = false; showFillerVideo();
       fade(0, 1200, () => { if (!bgPlaying) bg.pauseVideo(); });
@@ -280,8 +328,12 @@
     const cur = S && S.current, next = (S && S.next) || [];
     const box = $("#liveSinger");
     if (on && cur) {
-      box.innerHTML = `${avatarHTML(cur)}<div class="txt"><div class="k">Sta cantando</div><div class="n">${esc(cur.singer)}</div><div class="s"><b>${esc(cur.title)}</b>${cur.artist ? " · " + esc(cur.artist) : ""}</div>${next[0] ? `<div class="s">Dopo: <b>${esc(next[0].singer)}</b></div>` : ""}</div>`;
+      box.innerHTML = `${avatarHTML(cur)}<div class="txt"><div class="k">Sta cantando</div><div class="n">${esc(cur.singer)}</div><div class="s"><b>${esc(cur.title)}</b>${cur.artist ? " · " + esc(cur.artist) : ""}</div>${next[0] ? `<div class="s">Dopo: <b>${esc(next[0].singer)}</b></div>` : ""}${cur.voteOpen ? `<div class="vote-live">👏 Vota dal telefono · ${cur.votes} ${cur.votes === 1 ? "voto" : "voti"}</div>` : ""}</div>`;
     }
+    const q = $("#liveQr div");
+    q.innerHTML = cur && cur.voteOpen
+      ? `<b>Vota l'esibizione</b><b>Inquadra il QR</b><span>${cur.votes} ${cur.votes === 1 ? "voto" : "voti"}</span>`
+      : `<b>Vuoi cantare?</b><b>Inquadra e prenota</b><span>${esc(S.settings.name)}</span>`;
     box.classList.toggle("hide", !(on && cur));
     $("#liveQr").classList.toggle("hide", !on);
   }
@@ -296,7 +348,6 @@
   function render() {
     if (!S) return;
     $("#nightName").innerHTML = brandHTML(S.settings.name);
-    $("#liveQrSub").textContent = S.settings.name;
     const cur = S.current, next = S.next || [];
     const playing = ytState === "playing" || ytState === "buffering";
     const ov = $("#overlay");
@@ -313,7 +364,10 @@
     if (!cur) lastCalledId = null;
 
     const hero = $("#hero");
-    if (celebrate) {
+    if (S.settings.showRanking && (S.ranking || []).length) {
+      hero.className = "hero no-pic";
+      hero.innerHTML = `<div>${kicker("Classifica della serata")}<ol class="board">${S.ranking.map((r, i) => `<li><span class="p">${i + 1}</span><div><div class="nm">${esc(r.singer)}</div><div class="tt">${esc(r.title)}${r.artist ? " · " + esc(r.artist) : ""}</div></div><div class="sc">${String(r.avg).replace(".", ",")} 👏<small>${r.count} voti</small></div></li>`).join("")}</ol></div>`;
+    } else if (celebrate) {
       hero.className = "hero";
       hero.innerHTML = `${pic(celebrate)}<div>${kicker("Un applauso per")}<div class="who">${esc(celebrate.singer)}</div>${next[0] ? `<div class="what">Ora tocca a <b>${esc(next[0].singer)}</b></div>` : ""}</div>`;
     } else if (cur) {
@@ -326,6 +380,109 @@
     }
     applyFiller();
     $("#nextBox").innerHTML = next.length ? `${kicker("Prossimi")}<ol class="upnext">${next.slice(0, 4).map((q, i) => `<li><span class="n">${i + 1}</span>${avatarHTML(q)}<div><b>${esc(q.singer)}</b> <span class="t">· ${esc(q.title)}</span></div></li>`).join("")}</ol>` : "";
+  }
+
+
+  // ---------- voto: pop-up esplosivo con suono ----------
+  let actx = null, master = null, noise = null, burstTimer = null, duck = false;
+  function audio() {
+    if (actx) return actx;
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      master = actx.createGain(); master.gain.value = 0.7; master.connect(actx.destination);
+      const len = actx.sampleRate * 0.5; noise = actx.createBuffer(1, len, actx.sampleRate);
+      const d = noise.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    } catch { actx = null; }
+    return actx;
+  }
+  function clap(t, g) {
+    const src = actx.createBufferSource(); src.buffer = noise;
+    const bp = actx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 900 + Math.random() * 1600; bp.Q.value = 0.9;
+    const env = actx.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + 0.002); env.gain.exponentialRampToValueAtTime(0.001, t + 0.09 + Math.random() * 0.05);
+    src.connect(bp); bp.connect(env); env.connect(master); src.start(t, Math.random() * 0.4, 0.2);
+  }
+  function applause(dur, perSec, g) {
+    const t0 = actx.currentTime;
+    for (let i = 0; i < dur * perSec; i++) {
+      const t = t0 + Math.random() * dur, edge = Math.min(1, (t - t0) / 0.6, (t0 + dur - t) / 1.2);
+      clap(t, g * (0.4 + Math.random() * 0.6) * Math.max(0.05, edge));
+    }
+  }
+  function tone(f, t, dur, type, g, f2) {
+    const o = actx.createOscillator(), env = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.linearRampToValueAtTime(f2, t + dur);
+    env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + 0.02); env.gain.setValueAtTime(g, t + dur * 0.7); env.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(env); env.connect(master); o.start(t); o.stop(t + dur + 0.05);
+    return o;
+  }
+  function playLevel(level) {
+    if (!audio()) return;
+    if (actx.state === "suspended") actx.resume();
+    const t = actx.currentTime + 0.05;
+    if (level === 1) { // trombone triste
+      [[233, 0, .45], [220, .5, .45], [208, 1, .45]].forEach(([f, d, l]) => tone(f, t + d, l, "sawtooth", .16));
+      const o = tone(196, t + 1.5, 1.6, "sawtooth", .16);
+      const lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 6; lg.gain.value = 6; lfo.connect(lg); lg.connect(o.frequency); lfo.start(t + 1.6); lfo.stop(t + 3.2);
+    } else if (level === 2) { // "mah"
+      tone(330, t, .35, "square", .07); tone(311, t + .42, .6, "square", .07);
+      applause(1.6, 6, .25);
+    } else if (level === 3) {
+      [523, 659, 784].forEach((f, i) => tone(f, t + i * .12, .5, "triangle", .14));
+      applause(3, 28, .5);
+    } else if (level === 4) {
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * .13, .4, "square", .07));
+      [523, 659, 784].forEach((f) => tone(f, t + .55, 1.1, "sawtooth", .05));
+      applause(5, 55, .6);
+    } else { // standing ovation / vincitore
+      [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * .11, .35, "square", .08));
+      [523, 659, 784, 1047].forEach((f) => tone(f, t + .6, 1.6, "sawtooth", .05));
+      tone(1047, t + .6, 1.6, "triangle", .08);
+      applause(7, 95, .7);
+      setTimeout(() => actx && applause(4, 60, .5), 3000);
+    }
+  }
+  // coriandoli verdi, bianchi e oro
+  function confetti(n, rain) {
+    const cv = $("#confetti"), cx = cv.getContext("2d");
+    const W = cv.width = innerWidth * devicePixelRatio, H = cv.height = innerHeight * devicePixelRatio, k = devicePixelRatio;
+    const cols = rain ? ["#6f86a6", "#4d5b70"] : ["#8acb2c", "#b7f05a", "#ffffff", "#f5c542"];
+    const ps = Array.from({ length: n }, () => rain
+      ? { x: Math.random() * W, y: -Math.random() * H, vx: 0, vy: (2 + Math.random() * 3) * k, w: 2 * k, h: 14 * k, r: 0, vr: 0, c: cols[Math.random() * 2 | 0] }
+      : { x: W / 2 + (Math.random() - .5) * W * .2, y: H * .55, vx: (Math.random() - .5) * 26 * k, vy: -(10 + Math.random() * 20) * k, w: (6 + Math.random() * 8) * k, h: (8 + Math.random() * 12) * k, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * cols.length | 0] });
+    let frames = 0; cancelAnimationFrame(confetti.raf);
+    (function step() {
+      cx.clearRect(0, 0, W, H);
+      for (const p of ps) {
+        if (!rain) { p.vy += .45 * k; p.vx *= .99; }
+        p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        if (rain && p.y > H) p.y = -20;
+        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, Math.abs(Math.cos(p.r)) * p.h + 1); cx.restore();
+      }
+      if (++frames < 420 && !$("#burst").hidden) confetti.raf = requestAnimationFrame(step); else cx.clearRect(0, 0, W, H);
+    })();
+  }
+  function openBurst(cls, html, level, ms) {
+    const b = $("#burst");
+    b.className = "burst " + cls; $("#burstCard").innerHTML = html; b.hidden = false;
+    duck = true; applyFiller();
+    playLevel(level);
+    const counts = [0, 70, 0, 80, 170, 300];
+    if (level === 1) confetti(counts[1], true); else if (counts[level]) confetti(counts[level], false);
+    clearTimeout(burstTimer); burstTimer = setTimeout(closeBurst, ms);
+  }
+  function closeBurst() { $("#burst").hidden = true; duck = false; applyFiller(); }
+  $("#burst").onclick = closeBurst;
+  const faceHTML = (r) => r.selfie ? `<div class="face" style="background-image:url('${esc(r.selfie)}')"></div>` : `<div class="face">${esc(initials(r.singer))}</div>`;
+  const clapRow = (lv) => [1, 2, 3, 4, 5].map((i) => `<span class="${i <= lv ? "" : "off"}" style="animation-delay:${0.35 + i * 0.12}s">👏</span>`).join("");
+  function showResult(r) {
+    openBurst("lv" + r.level, `${faceHTML(r)}<div class="claps">${clapRow(r.level)}</div><div class="lv">${esc(r.label)}</div>
+      <p class="who">${esc(r.singer)}</p><div class="meta">Media <b>${String(r.avg).replace(".", ",")}</b> su 5 · <b>${r.count}</b> ${r.count === 1 ? "voto" : "voti"}</div>`, r.level, 9000);
+  }
+  function showWinner(w) {
+    const p = w.podium || [];
+    openBurst("win lv5", `<div class="kick">🏆 Vincitore della serata</div><div class="claps">🏆</div><div class="lv">${esc(w.winner.singer)}</div>
+      <div class="meta"><b>${esc(w.winner.title)}</b> · media <b>${String(w.winner.avg).replace(".", ",")}</b> su 5 · ${w.winner.count} voti</div>
+      ${p.length > 1 ? `<div class="podium">${p.slice(1).map((r, i) => `<span>${i + 2}° ${esc(r.singer)} · ${String(r.avg).replace(".", ",")}</span>`).join("")}</div>` : ""}`, 5, 20000);
   }
 
   $("#fsBtn").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch {} };

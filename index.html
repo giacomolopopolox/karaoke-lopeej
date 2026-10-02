@@ -44,6 +44,24 @@
   .sugg .hint:hover{background:none}
   .picked{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px;border-radius:var(--r);background:var(--lime-soft);border:1px solid var(--lime)}
   .picked .cover{width:48px;height:48px;border-radius:3px;background:var(--surface-2) center/cover no-repeat}
+  /* voto del pubblico */
+  .vote{border:2px solid var(--lime);background:var(--surface);border-radius:var(--r);padding:clamp(16px,4.5vw,22px);display:flex;flex-direction:column;gap:12px}
+  .vote h2{font-size:clamp(20px,5.6vw,26px);text-transform:uppercase;letter-spacing:.03em;line-height:1.1}
+  .vote .sub{margin:0;color:var(--muted);font-size:14px}
+  .vote-opts{display:flex;flex-direction:column;gap:8px}
+  .vote-opts button{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:11px 14px;border:1px solid var(--line);border-radius:4px;background:var(--bg);cursor:pointer;font-weight:600}
+  .vote-opts button:hover{border-color:var(--lime)}
+  .vote-opts button[aria-pressed="true"]{background:var(--lime);border-color:var(--lime);color:var(--on-lime)}
+  .vote-opts .claps{font-size:20px;letter-spacing:-2px;min-width:7.2em;line-height:1}
+  .vote-opts .claps i{font-style:normal;opacity:.18}
+  .vote-opts button[aria-pressed="true"] .claps i{opacity:.3}
+  .vote .thanks{font-size:14px;color:var(--lime-ink);font-weight:600;min-height:1.2em;margin:0}
+  .result{text-align:center;padding:20px 16px;border-radius:var(--r);background:var(--lime);color:var(--on-lime);animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
+  .result .lv{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,7vw,32px);text-transform:uppercase;line-height:1.1}
+  .result .cl{font-size:30px;margin-bottom:6px}
+  .result p{margin:6px 0 0;font-size:14px;font-weight:600}
+  .result.low{background:var(--surface-2);color:var(--fg)}
+  @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
 </style>
 </head>
 <body>
@@ -59,6 +77,8 @@
   </section>
 
   <div class="now" id="nowBox" hidden></div>
+  <section id="resultBox" hidden></section>
+  <section class="vote" id="voteBox" hidden></section>
 
   <section id="formBox">
     <form id="form" class="card stack" style="gap:16px" novalidate>
@@ -126,6 +146,8 @@
   socket.on("connect", () => setStatus(true, "In diretta"));
   socket.on("disconnect", () => setStatus(false, "Riconnessione…"));
   socket.on("state", (s) => { S = s; render(); });
+  socket.on("vote:result", (r) => showResult(r));
+  socket.on("vote:winner", (w) => showWinner(w));
 
   // ---------- selfie ----------
   $("#photo").addEventListener("change", async (e) => {
@@ -191,6 +213,43 @@
   }
 
   // ---------- grafica ----------
+  // ---------- voto ----------
+  const LEVELS = ["", "Delusione", "Zero entusiasmo", "Bene!", "Spettacolo!", "Standing ovation!"];
+  const claps = (n) => "👏".repeat(n) + `<i>${"👏".repeat(5 - n)}</i>`;
+  let resultTimer = null, lastVoteId = null;
+  function renderVote() {
+    const v = S.vote, box = $("#voteBox");
+    if (!v) { box.hidden = true; lastVoteId = null; return; }
+    box.hidden = false;
+    if (v.mine) { box.innerHTML = `<span class="label">Sei sul palco</span><h2>Dai tutto!</h2><p class="sub">Il pubblico sta votando la tua esibizione. L'esito arriva sullo schermo a fine canzone.</p>`; return; }
+    if (lastVoteId !== v.id && v.my === 0 && navigator.vibrate) { try { navigator.vibrate(60); } catch {} }
+    lastVoteId = v.id;
+    box.innerHTML = `<span class="label">Vota l'esibizione</span>
+      <h2>${esc(v.singer)}</h2><p class="sub">${esc(v.title)} · puoi cambiare voto finché canta</p>
+      <div class="vote-opts" role="group" aria-label="Il tuo voto">${[5, 4, 3, 2, 1].map((n) => `<button type="button" data-vote="${n}" aria-pressed="${v.my === n}"><span class="claps" aria-hidden="true">${claps(n)}</span><span>${n} · ${LEVELS[n]}</span></button>`).join("")}</div>
+      <p class="thanks" id="voteThanks">${v.my ? "Voto registrato: grazie!" : ""}</p>`;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-vote]"); if (!b || !S?.vote) return;
+    const score = +b.dataset.vote;
+    document.querySelectorAll("[data-vote]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    socket.emit("guest:vote", { id: S.vote.id, score }, (r) => {
+      const t = $("#voteThanks");
+      if (r?.ok) { if (S.vote) S.vote.my = score; if (t) t.textContent = "Voto registrato: grazie!"; }
+      else { toast(r?.error || "Voto non registrato"); render(); }
+    });
+  });
+  function showResult(r) {
+    const box = $("#resultBox");
+    box.innerHTML = `<div class="result${r.level <= 2 ? " low" : ""}"><div class="cl">${"👏".repeat(r.level)}</div><div class="lv">${esc(r.label)}</div><p>${esc(r.singer)} · media ${String(r.avg).replace(".", ",")} su 5 · ${r.count} ${r.count === 1 ? "voto" : "voti"}</p></div>`;
+    box.hidden = false; clearTimeout(resultTimer); resultTimer = setTimeout(() => (box.hidden = true), 12000);
+  }
+  function showWinner(w) {
+    const box = $("#resultBox");
+    box.innerHTML = `<div class="result"><div class="cl">🏆</div><div class="lv">Vince ${esc(w.singer)}!</div><p>${esc(w.title)} · media ${String(w.avg).replace(".", ",")} su 5</p></div>`;
+    box.hidden = false; clearTimeout(resultTimer); resultTimer = setTimeout(() => (box.hidden = true), 30000);
+  }
+
   function render() {
     if (!S) return;
     $("#nightName").innerHTML = brandHTML(S.settings.name);
@@ -199,6 +258,7 @@
     $("#nowBox").hidden = !cur;
     if (cur) $("#nowBox").innerHTML = `<span class="live-dot"></span><div class="song"><span>Sul palco adesso</span><div><b>${esc(cur.singer)}</b> · ${esc(cur.title)}</div></div>`;
 
+    renderVote();
     const per = S.settings.minutesPerSong || 4;
     $("#closedBox").hidden = S.settings.open || !!showDone;
     $("#formBox").hidden = !S.settings.open || !!showDone;

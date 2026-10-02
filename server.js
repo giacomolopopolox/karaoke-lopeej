@@ -28,7 +28,7 @@ const SELFIE_TOKEN = crypto.randomBytes(16).toString("hex");
 
 // ---------- stato della serata ----------
 const DEFAULT_FILLER = { url: "", videoId: null, listId: null, enabled: true, volume: 60, visibility: 45 };
-const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, filler: { ...DEFAULT_FILLER } };
+const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
 
 // Musica d'attesa: accetta il link di un video o di una playlist YouTube
 function parseFiller(raw) {
@@ -87,7 +87,41 @@ function deleteSelfie(item) {
   item.hasSelfie = false;
 }
 // Il selfie viene cancellato appena l'esibizione finisce
-function finish(item, status) { item.status = status; item.endedAt = Date.now(); deleteSelfie(item); }
+function finish(item, status) {
+  item.status = status; item.endedAt = Date.now();
+  // il selfie resta ancora qualche secondo per il pop-up dell'esito, poi viene cancellato
+  setTimeout(() => { if (item.status !== "singing") { deleteSelfie(item); broadcast(); } }, 20000);
+}
+
+// ---------- voto del pubblico ----------
+const LEVELS = ["", "Delusione", "Zero entusiasmo", "Bene!", "Spettacolo!", "Standing ovation!"];
+const voteCount = (q) => Object.keys(q.votes || {}).length;
+// il voto si apre quando la canzone parte davvero (o subito, se non c'è una base da far partire)
+const voteOpen = (q) => !!q && state.settings.voting && q.status === "singing" && !q.revealed && (q.sang || !q.videoId);
+// chiude il voto dell'esibizione e manda l'esito allo schermo
+function reveal(item, why) {
+  if (!item || item.revealed) return false;
+  const vals = Object.values(item.votes || {});
+  item.revealed = true;
+  if (!vals.length) { if (why === "dj") io.to("dj").emit("notice", "Nessun voto per questa esibizione."); broadcast(); return false; }
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  item.score = { avg: Math.round(avg * 10) / 10, count: vals.length };
+  item.votes = {}; // i voti singoli non servono più: resta solo la media
+  const level = Math.min(5, Math.max(1, Math.round(avg)));
+  const result = { id: item.id, singer: item.singer, title: item.title, artist: item.artist, avg: item.score.avg, count: vals.length, level, label: LEVELS[level], selfie: state.settings.showSelfies ? selfieUrl(item) : null };
+  io.to("screen").emit("vote:result", result);
+  io.to("guest").emit("vote:result", { singer: item.singer, avg: item.score.avg, count: vals.length, level, label: LEVELS[level] });
+  broadcast();
+  return true;
+}
+function ranking(limit = 10) {
+  const min = state.settings.minVotes || 1;
+  return state.queue
+    .filter((q) => q.score && q.score.count >= min && q.status !== "skipped")
+    .sort((a, b) => (b.score.avg - a.score.avg) || (b.score.count - a.score.count) || ((a.endedAt || 0) - (b.endedAt || 0)))
+    .slice(0, limit)
+    .map((q) => ({ id: q.id, singer: q.singer, title: q.title, artist: q.artist, avg: q.score.avg, count: q.score.count }));
+}
 const selfieUrl = (q) => (q.hasSelfie ? `/selfie/${q.id}?t=${SELFIE_TOKEN}` : null);
 
 // ---------- server web ----------
@@ -172,13 +206,18 @@ function guestView(clientId) {
     settings: { name: state.settings.name, open: state.settings.open, maxPerSinger: state.settings.maxPerSinger, minutesPerSong: state.settings.minutesPerSong },
     current: cur ? publicItem(cur) : null,
     queue: waiting().map((q) => ({ ...publicItem(q), mine: !!clientId && q.clientId === clientId })),
-    done: state.queue.filter((q) => q.status === "done").length
+    done: state.queue.filter((q) => q.status === "done").length,
+    vote: cur && voteOpen(cur) ? { id: cur.id, singer: cur.singer, title: cur.title, mine: !!clientId && cur.clientId === clientId, my: (clientId && cur.votes?.[clientId]) || 0 } : null
   };
 }
 function djView() {
   return {
     settings: state.settings,
-    queue: state.queue.map(({ clientId, ...q }) => ({ ...q, selfie: selfieUrl(q) })),
+    queue: state.queue.map(({ clientId, votes, ...q }) => {
+      const v = Object.values(votes || {});
+      return { ...q, selfie: selfieUrl(q), live: v.length ? { count: v.length, avg: Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 } : null };
+    }),
+    ranking: ranking(10),
     player,
     screens: io.sockets.adapter.rooms.get("screen")?.size || 0,
     youtube: { enabled: !!YT_KEY, searchesToday: quota.day === today() ? quota.searches : 0 }
@@ -188,8 +227,9 @@ function screenView() {
   const cur = current(), show = state.settings.showSelfies;
   const withPic = (q) => ({ ...publicItem(q), selfie: show ? selfieUrl(q) : null });
   return {
-    settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler, liveOverlay: state.settings.liveOverlay },
-    current: cur ? { ...withPic(cur), videoId: cur.videoId || null, startedAt: cur.startedAt || 0 } : null,
+    settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler, liveOverlay: state.settings.liveOverlay, voting: state.settings.voting, showRanking: state.settings.showRanking },
+    current: cur ? { ...withPic(cur), videoId: cur.videoId || null, startedAt: cur.startedAt || 0, voteOpen: voteOpen(cur), votes: voteCount(cur) } : null,
+    ranking: state.settings.showRanking ? ranking(5) : [],
     next: waiting().slice(0, 5).map(withPic)
   };
 }
@@ -203,6 +243,13 @@ function broadcast() {
     io.to("screen").emit("state", screenView());
     for (const [, s] of io.of("/").sockets) if (s.data.role === "guest") s.emit("state", guestView(s.data.clientId));
   }, 30);
+}
+// solo regia e schermo (es. a ogni voto): evita di inviare aggiornamenti inutili a tutti i telefoni
+let staffTimer = null;
+function broadcastStaff() {
+  save();
+  if (staffTimer) return;
+  staffTimer = setTimeout(() => { staffTimer = null; io.to("dj").emit("state", djView()); io.to("screen").emit("state", screenView()); }, 400);
 }
 function cueCurrent() {
   const cur = current();
@@ -291,6 +338,19 @@ io.on("connection", (socket) => {
     ack({ ok: true, id: item.id, selfie: item.hasSelfie, position: waiting().findIndex((q) => q.id === item.id) + 1 });
   });
 
+  socket.on("guest:vote", (data, ack = () => {}) => {
+    if (typeof ack !== "function") return;
+    const cur = current(), score = parseInt(data?.score);
+    if (!cur || cur.id !== data?.id || !voteOpen(cur)) return ack({ error: "Il voto per questa esibizione è chiuso." });
+    if (!(score >= 1 && score <= 5)) return ack({ error: "Voto non valido." });
+    const cid = socket.data.clientId;
+    if (!cid) return ack({ error: "Ricarica la pagina e riprova." });
+    if (cur.clientId && cur.clientId === cid) return ack({ error: "Non puoi votare la tua esibizione." });
+    cur.votes = cur.votes || {};
+    cur.votes[cid] = score;
+    broadcastStaff(); ack({ ok: true, score });
+  });
+
   socket.on("guest:cancel", (id, ack = () => {}) => {
     const q = find(id);
     if (!q || q.status !== "waiting" || !socket.data.clientId || q.clientId !== socket.data.clientId) return ack({ error: "Prenotazione non trovata." });
@@ -303,6 +363,9 @@ io.on("connection", (socket) => {
     socket.on("screen:status", (s) => {
       player = { videoId: s?.videoId || null, state: String(s?.state || "idle"), time: +s?.time || 0, duration: +s?.duration || 0, filler: { playing: !!s?.filler?.playing, title: String(s?.filler?.title || "").slice(0, 120), paused: !!s?.filler?.paused } };
       io.to("dj").volatile.emit("player", player);
+      const cur = current();
+      if (player.state === "playing" && cur && cur.videoId === player.videoId && !cur.sang) { cur.sang = true; broadcast(); }
+      if (player.state === "ended" && cur && cur.videoId && cur.videoId === player.videoId && voteOpen(cur)) reveal(cur, "end");
     });
     socket.on("screen:error", ({ videoId, code }) => {
       const cur = current();
@@ -338,11 +401,20 @@ io.on("connection", (socket) => {
   });
   socket.on("dj:top", (id) => { const q = find(id); if (q) { q.pos = minPos() - 1; broadcast(); } });
   socket.on("dj:next", () => {
-    const cur = current(); if (cur) finish(cur, "done");
+    const cur = current();
+    if (cur) { if (voteOpen(cur)) reveal(cur, "next"); finish(cur, "done"); }
     const n = waiting()[0]; if (n) { n.status = "singing"; n.startedAt = Date.now(); }
     broadcast(); cueCurrent();
   });
-  socket.on("dj:skip", () => { const cur = current(); if (cur) { finish(cur, "skipped"); broadcast(); cueCurrent(); } });
+  socket.on("dj:skip", () => { const cur = current(); if (cur) { cur.votes = {}; finish(cur, "skipped"); broadcast(); cueCurrent(); } });
+  socket.on("dj:reveal", () => reveal(current(), "dj"));
+  socket.on("dj:reopenVote", () => { const cur = current(); if (cur && cur.revealed && !cur.score) { cur.revealed = false; broadcast(); } });
+  socket.on("dj:winner", () => {
+    const top = ranking(3);
+    if (!top.length) return socket.emit("notice", `Nessuna esibizione ha ancora almeno ${state.settings.minVotes} voti.`);
+    io.to("screen").emit("vote:winner", { winner: top[0], podium: top });
+    io.to("guest").emit("vote:winner", { singer: top[0].singer, title: top[0].title, avg: top[0].avg });
+  });
   socket.on("dj:singNow", (id) => {
     const cur = current(); if (cur) { cur.status = "waiting"; cur.pos = minPos() - 1; cur.startedAt = null; }
     const q = find(id); if (q) { q.status = "singing"; q.startedAt = Date.now(); }
@@ -369,6 +441,9 @@ io.on("connection", (socket) => {
     if (typeof s?.open === "boolean") st.open = s.open;
     if (typeof s?.showSelfies === "boolean") st.showSelfies = s.showSelfies;
     if (typeof s?.liveOverlay === "boolean") st.liveOverlay = s.liveOverlay;
+    if (typeof s?.voting === "boolean") st.voting = s.voting;
+    if (typeof s?.showRanking === "boolean") st.showRanking = s.showRanking;
+    if (s?.minVotes != null) st.minVotes = Math.min(50, Math.max(1, parseInt(s.minVotes) || 1));
     if (s?.filler) {
       const f = st.filler;
       if (typeof s.filler.enabled === "boolean") f.enabled = s.filler.enabled;
