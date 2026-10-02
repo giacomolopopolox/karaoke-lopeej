@@ -31,6 +31,8 @@ Web app per le serate karaoke di Lopee J.
 
 **Consenso privacy.** Senza la spunta la prenotazione non parte. L'informativa è un modello di partenza: se fai serate in locali pubblici, falla controllare a chi ti segue per la parte legale.
 
+**Musica d'attesa.** In regia incolla il link YouTube di un video, di un tuo mix o di una playlist (le playlist vengono riprodotte in ordine casuale). La musica parte da sola quando il palco è libero, mentre la base è caricata ma non ancora partita e a fine canzone. Sfuma quando premi **Play** e riparte da sola alla fine. Dalla regia regoli il volume, salti il brano o la fermi al volo.
+
 **Chiamata sul palco.** Quando premi **Avanti** o **Chiama sul palco**, le tre barre del logo attraversano lo schermo e appaiono selfie, nome e canzone. Il video parte quando premi **Play**.
 
 ## Avvio sul tuo computer (facoltativo)

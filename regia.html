@@ -64,6 +64,13 @@
   .toggle[aria-checked="true"]{background:var(--lime)}
   .toggle[aria-checked="true"]::after{transform:translateX(20px)}
   details summary{cursor:pointer;font-weight:600}
+  .filler-now{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:4px;background:var(--surface-2);font-size:14px;min-width:0}
+  .filler-now span{overflow-wrap:anywhere}
+  .eq{display:inline-flex;gap:2px;align-items:flex-end;height:14px;flex:none}
+  .eq i{width:3px;background:var(--lime);animation:eq 0.9s ease-in-out infinite}
+  .eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
+  @keyframes eq{0%,100%{height:4px}50%{height:14px}}
+  input[type=range]{accent-color:var(--lime);width:100%}
   .history > li{opacity:.75}
 </style>
 </head>
@@ -136,6 +143,16 @@
           <div class="field"><label for="setMin">Minuti a canzone</label><input type="number" id="setMin" min="2" max="10"></div>
         </div>
         <div class="switch"><span><b>Selfie sullo schermo</b><br><span style="font-size:13px;color:var(--muted)">Se spento, sullo schermo compaiono solo le iniziali</span></span><button class="toggle" id="setSelfies" role="switch" aria-checked="true" aria-label="Selfie sullo schermo" type="button"></button></div>
+      </section>
+
+      <section class="card stack">
+        <span class="label">Musica d'attesa</span>
+        <p style="margin:0;font-size:13px;color:var(--muted)">Suona quando il palco è libero e mentre carichi la base; sfuma da sola quando premi Play.</p>
+        <div class="filler-now" id="fillerNow"></div>
+        <form class="inline-form" id="fillerForm"><input type="text" id="fillerUrl" placeholder="Link YouTube di un video, mix o playlist" aria-label="Link della musica d'attesa"><button class="btn sm" type="submit">Salva</button></form>
+        <div class="switch"><span><b>Automatica</b><br><span style="font-size:13px;color:var(--muted)">Parte e si ferma da sola tra una canzone e l'altra</span></span><button class="toggle" id="fillerOn" role="switch" aria-checked="true" aria-label="Musica d'attesa automatica" type="button"></button></div>
+        <div class="field"><label for="fillerVol">Volume <span class="mono" id="fillerVolTxt"></span></label><input type="range" id="fillerVol" min="0" max="100" step="5"></div>
+        <div class="row"><button class="btn sm" id="fillerSkip" type="button">Salta brano</button><button class="btn sm" id="fillerPause" type="button">Ferma ora</button></div>
       </section>
 
       <section class="card stack">
@@ -290,6 +307,10 @@
     sync("#setName", S.settings.name); sync("#setMax", S.settings.maxPerSinger); sync("#setMin", S.settings.minutesPerSong);
     $("#setOpen").setAttribute("aria-checked", String(!!S.settings.open));
     $("#setSelfies").setAttribute("aria-checked", String(S.settings.showSelfies !== false));
+    const fl = S.settings.filler || {};
+    $("#fillerOn").setAttribute("aria-checked", String(fl.enabled !== false));
+    sync("#fillerUrl", fl.url); sync("#fillerVol", fl.volume ?? 60); $("#fillerVolTxt").textContent = (fl.volume ?? 60) + "%";
+    renderFiller();
     $("#resetArea").innerHTML = confirmReset
       ? `<div class="row"><span style="font-size:14px">Cancello coda e storico della serata?</span><button class="btn danger sm" data-act="resetyes">Sì, svuota</button><button class="btn sm" data-act="resetno">Annulla</button></div>`
       : `<button class="btn danger" data-act="reset">Svuota coda e storico</button>`;
@@ -298,7 +319,19 @@
     if (focusId) { const el = document.getElementById(focusId); if (el && el !== document.activeElement) { el.focus(); if (el.type === "text") { const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } }
   }
   function sync(sel, v) { const el = $(sel); if (document.activeElement !== el) el.value = v ?? ""; }
+  function renderFiller() {
+    if (!S) return;
+    const f = S.settings.filler || {}, p = player.filler || {};
+    const box = $("#fillerNow");
+    if (!f.videoId && !f.listId) box.innerHTML = "<span>Nessuna musica impostata: incolla un link qui sotto.</span>";
+    else if (p.playing) box.innerHTML = `<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span>In onda${p.title ? ": <b>" + esc(p.title) + "</b>" : ""}</span>`;
+    else if (p.paused) box.innerHTML = "<span>Fermata a mano: premi Riprendi per farla ripartire.</span>";
+    else if (!f.enabled) box.innerHTML = "<span>Automatica spenta.</span>";
+    else box.innerHTML = `<span>Pronta: ripartirà alla fine della canzone.${S.screens ? "" : " Schermo non collegato."}</span>`;
+    $("#fillerPause").textContent = p.paused ? "Riprendi" : "Ferma ora";
+  }
   function renderProgress() {
+    renderFiller();
     const t = $("#pTime"); if (!t) return;
     t.textContent = fmtTime(player.time); $("#pDur").textContent = fmtTime(player.duration);
     $("#pBar").style.width = player.duration ? Math.min(100, (player.time / player.duration) * 100) + "%" : "0";
@@ -352,6 +385,12 @@
     $("#qSinger").value = ""; $("#qTitle").value = ""; $("#qArtist").value = ""; $("#qSinger").focus();
   });
   $("#setOpen").onclick = () => emit("dj:settings", { open: !S.settings.open });
+  $("#fillerForm").addEventListener("submit", (e) => { e.preventDefault(); emit("dj:settings", { filler: { url: $("#fillerUrl").value } }); $("#fillerUrl").blur(); toast("Musica d'attesa salvata"); });
+  $("#fillerOn").onclick = () => emit("dj:settings", { filler: { enabled: (S.settings.filler || {}).enabled === false } });
+  $("#fillerVol").oninput = (e) => { $("#fillerVolTxt").textContent = e.target.value + "%"; };
+  $("#fillerVol").onchange = (e) => emit("dj:settings", { filler: { volume: e.target.value } });
+  $("#fillerSkip").onclick = () => emit("dj:filler", { cmd: "skip" });
+  $("#fillerPause").onclick = () => emit("dj:filler", { cmd: (player.filler || {}).paused ? "resume" : "pause" });
   $("#setSelfies").onclick = () => emit("dj:settings", { showSelfies: S.settings.showSelfies === false });
   $("#setName").onchange = (e) => emit("dj:settings", { name: e.target.value });
   $("#setMax").onchange = (e) => emit("dj:settings", { maxPerSinger: e.target.value });

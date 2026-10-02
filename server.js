@@ -27,16 +27,29 @@ const SELFIE_DIR = path.join(DATA_DIR, "selfies");
 const SELFIE_TOKEN = crypto.randomBytes(16).toString("hex");
 
 // ---------- stato della serata ----------
-const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true };
+const DEFAULT_FILLER = { url: "", videoId: null, listId: null, enabled: true, volume: 60 };
+const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, filler: { ...DEFAULT_FILLER } };
+
+// Musica d'attesa: accetta il link di un video o di una playlist YouTube
+function parseFiller(raw) {
+  const url = String(raw || "").trim().slice(0, 300);
+  if (!url) return { url: "", videoId: null, listId: null };
+  let listId = null;
+  try { listId = new URL(url).searchParams.get("list"); } catch {}
+  if (listId && !/^[\w-]{10,64}$/.test(listId)) listId = null;
+  const videoId = yt.videoIdFromUrl(url);
+  if (!videoId && !listId) return null;
+  return { url, videoId, listId };
+}
 let state = { settings: { ...DEFAULT_SETTINGS }, queue: [] };
 try {
   const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-  state = { settings: { ...DEFAULT_SETTINGS, ...saved.settings }, queue: saved.queue || [] };
+  state = { settings: { ...DEFAULT_SETTINGS, ...saved.settings, filler: { ...DEFAULT_FILLER, ...(saved.settings?.filler || {}) } }, queue: saved.queue || [] };
   if (state.settings.name === "Karaoke Night") state.settings.name = DEFAULT_SETTINGS.name;
   state.queue.forEach((q) => { if (q.search?.state === "searching") q.search = { state: "idle" }; });
 } catch {}
 
-let player = { videoId: null, state: "idle", time: 0, duration: 0 };
+let player = { videoId: null, state: "idle", time: 0, duration: 0, filler: { playing: false, title: "" } };
 let quota = { day: today(), searches: 0 };
 function today() { return new Date().toISOString().slice(0, 10); }
 
@@ -175,7 +188,7 @@ function screenView() {
   const cur = current(), show = state.settings.showSelfies;
   const withPic = (q) => ({ ...publicItem(q), selfie: show ? selfieUrl(q) : null });
   return {
-    settings: { name: state.settings.name, open: state.settings.open },
+    settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler },
     current: cur ? { ...withPic(cur), videoId: cur.videoId || null, startedAt: cur.startedAt || 0 } : null,
     next: waiting().slice(0, 5).map(withPic)
   };
@@ -288,7 +301,7 @@ io.on("connection", (socket) => {
 
   if (role === "screen") {
     socket.on("screen:status", (s) => {
-      player = { videoId: s?.videoId || null, state: String(s?.state || "idle"), time: +s?.time || 0, duration: +s?.duration || 0 };
+      player = { videoId: s?.videoId || null, state: String(s?.state || "idle"), time: +s?.time || 0, duration: +s?.duration || 0, filler: { playing: !!s?.filler?.playing, title: String(s?.filler?.title || "").slice(0, 120), paused: !!s?.filler?.paused } };
       io.to("dj").volatile.emit("player", player);
     });
     socket.on("screen:error", ({ videoId, code }) => {
@@ -355,6 +368,16 @@ io.on("connection", (socket) => {
     if (typeof s?.name === "string") st.name = clean(s.name, 40) || DEFAULT_SETTINGS.name;
     if (typeof s?.open === "boolean") st.open = s.open;
     if (typeof s?.showSelfies === "boolean") st.showSelfies = s.showSelfies;
+    if (s?.filler) {
+      const f = st.filler;
+      if (typeof s.filler.enabled === "boolean") f.enabled = s.filler.enabled;
+      if (s.filler.volume != null) f.volume = Math.min(100, Math.max(0, parseInt(s.filler.volume) || 0));
+      if (typeof s.filler.url === "string") {
+        const p = parseFiller(s.filler.url);
+        if (!p) { socket.emit("notice", "Il link della musica d'attesa non è un video o una playlist di YouTube."); }
+        else Object.assign(f, p);
+      }
+    }
     if (s?.maxPerSinger) st.maxPerSinger = Math.min(10, Math.max(1, parseInt(s.maxPerSinger) || 2));
     if (s?.minutesPerSong) st.minutesPerSong = Math.min(10, Math.max(2, parseInt(s.minutesPerSong) || 4));
     broadcast();
@@ -365,6 +388,7 @@ io.on("connection", (socket) => {
     broadcast(); cueCurrent();
   });
   socket.on("dj:player", (cmd) => io.to("screen").emit("player:cmd", cmd));
+  socket.on("dj:filler", (cmd) => io.to("screen").emit("filler:cmd", cmd));
 });
 
 server.listen(PORT, () => {

@@ -13,7 +13,8 @@
   :root{--bg:#0b0e08;--surface:#171b11;--surface-2:#20261a;--line:#2e3626;--fg:#f2f6ea;--muted:#9aa58c;--lime:#8acb2c;--lime-ink:#9ad93a;--lime-soft:#1f2c10;--on-lime:#0c1006;--live:#ff5a6e;--live-soft:#3a1419;color-scheme:dark}
   html,body{height:100%;overflow:hidden;background:#000}
   #stage{position:fixed;inset:0;background:#000}
-  #player,#player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  #player,#player iframe,#bgplayer,#bgplayer iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  #bgwrap{position:absolute;inset:0}
 
   .overlay{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:clamp(16px,3vh,40px);padding:clamp(20px,4vw,56px);
     background:radial-gradient(ellipse at 85% 10%,rgba(138,203,44,.16),transparent 55%),rgba(11,14,8,.94);transition:opacity .45s}
@@ -83,6 +84,7 @@
 </div>
 
 <div id="stage">
+  <div id="bgwrap"><div id="bgplayer"></div></div>
   <div id="player"></div>
   <div class="badge hide" id="badge"></div>
   <div class="overlay" id="overlay">
@@ -104,6 +106,8 @@
   const { $, esc, store, brandHTML, avatarHTML, initials } = K;
   let S = null, socket = null, yt = null, ready = false, loadedId = null, pending = null, ytState = "idle";
   let celebrate = null, badgeTimer = null, lastCalledId = null, djPhoto = 0;
+  // musica d'attesa
+  let bg = null, bgReady = false, bgKey = null, bgPlaying = false, bgFirst = true, bgManualPause = false, songStarted = false, fadeTimer = null, fading = false, bgVol = 0;
   $("#startBrand").innerHTML = brandHTML("Canta con Lopee J!");
   $("#nightName").innerHTML = brandHTML("Canta con Lopee J!");
 
@@ -116,6 +120,7 @@
     socket.on("state", (s) => { S = s; render(); });
     socket.on("player:load", (d) => { pending = d; applyLoad(); });
     socket.on("player:cmd", (c) => command(c));
+    socket.on("filler:cmd", (c) => fillerCommand(c));
   }
   $("#gateForm").addEventListener("submit", (e) => { e.preventDefault(); connect($("#pin").value); });
   const saved = store.get("karaoke-pin"); if (saved) connect(saved); else $("#gate").hidden = false;
@@ -135,6 +140,7 @@
         onStateChange: (e) => {
           const map = { "-1": "unstarted", 0: "ended", 1: "playing", 2: "paused", 3: "buffering", 5: "cued" };
           ytState = map[e.data] || "idle";
+          if (ytState === "playing") songStarted = true;
           if (ytState === "ended" && S?.current) celebrate = { ...S.current };
           if (ytState === "playing") { celebrate = null; showBadge(); }
           render(); report();
@@ -142,25 +148,96 @@
         onError: (e) => { socket.emit("screen:error", { videoId: loadedId, code: e.data }); }
       }
     });
+    bg = new YT.Player("bgplayer", {
+      width: "100%", height: "100%",
+      playerVars: { rel: 0, playsinline: 1, controls: 0, modestbranding: 1, iv_load_policy: 3, fs: 0 },
+      events: {
+        onReady: () => { bgReady = true; applyFiller(); },
+        onStateChange: (e) => {
+          // un video singolo ricomincia da capo
+          if (e.data === 0 && !fillerCfg().listId && bgPlaying) { bg.seekTo(0, true); bg.playVideo(); }
+        },
+        onError: () => { if (fillerCfg().listId && bgPlaying) bg.nextVideo(); }
+      }
+    });
   };
+
+  // ---------- musica d'attesa ----------
+  const fillerCfg = () => (S && S.settings && S.settings.filler) || {};
+  function fade(to, ms, done) {
+    clearInterval(fadeTimer); fading = true;
+    const from = bgVol, steps = Math.max(1, Math.round(ms / 50)); let i = 0;
+    fadeTimer = setInterval(() => {
+      i++; bgVol = from + (to - from) * i / steps;
+      try { bg.setVolume(Math.round(bgVol)); } catch {}
+      if (i >= steps) { clearInterval(fadeTimer); fading = false; if (done) done(); }
+    }, 50);
+  }
+  function loadFillerSource() {
+    const f = fillerCfg(); const key = (f.listId || "") + "|" + (f.videoId || "");
+    if (key === bgKey) return;
+    bgKey = key; bgPlaying = false; bgFirst = true;
+    if (f.listId) bg.cuePlaylist({ list: f.listId, listType: "playlist", index: 0 });
+    else if (f.videoId) bg.cueVideoById(f.videoId);
+    else bg.stopVideo();
+  }
+  // suona quando il palco è libero, mentre la base è caricata ma non ancora partita, o a fine canzone
+  function shouldFill() {
+    const f = fillerCfg();
+    if (!f.enabled || (!f.videoId && !f.listId) || bgManualPause) return false;
+    if (!S || !S.current || !loadedId) return true;
+    if (ytState === "playing" || ytState === "buffering") return false;
+    if (ytState === "ended") return true;
+    return !songStarted;
+  }
+  function applyFiller() {
+    if (!bgReady || !S) return;
+    loadFillerSource();
+    const want = shouldFill(), vol = fillerCfg().volume ?? 60;
+    if (want && !bgPlaying) {
+      bgPlaying = true; bgVol = 0; bg.setVolume(0);
+      const pl = fillerCfg().listId && bgFirst ? bg.getPlaylist?.() : null;
+      if (pl && pl.length) { try { bg.setShuffle(true); bg.setLoop(true); } catch {} bg.playVideoAt(Math.floor(Math.random() * pl.length)); }
+      else { bg.playVideo(); if (fillerCfg().listId) setTimeout(() => { try { bg.setShuffle(true); bg.setLoop(true); } catch {} }, 1500); }
+      bgFirst = false;
+      fade(vol, 2500);
+    } else if (want && bgPlaying && !fading && Math.abs(bgVol - vol) > 1) {
+      bgVol = vol; bg.setVolume(vol);
+    } else if (!want && bgPlaying) {
+      bgPlaying = false;
+      fade(0, 1200, () => { if (!bgPlaying) bg.pauseVideo(); });
+    }
+  }
+  function fillerCommand(c) {
+    if (!bgReady) return;
+    if (c.cmd === "skip") { if (fillerCfg().listId) bg.nextVideo(); else bg.seekTo(0, true); }
+    if (c.cmd === "pause") bgManualPause = true;
+    if (c.cmd === "resume") bgManualPause = false;
+    applyFiller(); report();
+  }
   function applyLoad() {
     if (!ready || !pending) return;
     const { videoId, autoplay } = pending; pending = null;
     if (!videoId) { if (loadedId) yt.stopVideo(); loadedId = null; ytState = "idle"; render(); return; }
     if (videoId === loadedId) return;
-    loadedId = videoId; celebrate = null;
+    loadedId = videoId; celebrate = null; songStarted = false;
     autoplay ? yt.loadVideoById(videoId) : yt.cueVideoById(videoId);
   }
   function command(c) {
     if (!ready || !loadedId) return;
-    if (c.cmd === "play") yt.playVideo();
+    if (c.cmd === "play") {
+      // la musica d'attesa sfuma mentre parte la base
+      if (bgPlaying) { bgPlaying = false; fade(0, 900, () => { if (!bgPlaying) bg.pauseVideo(); }); }
+      yt.playVideo();
+    }
     if (c.cmd === "pause") yt.pauseVideo();
     if (c.cmd === "restart") { yt.seekTo(0, true); yt.playVideo(); }
     if (c.cmd === "seek") yt.seekTo(Math.max(0, yt.getCurrentTime() + (+c.value || 0)), true);
   }
   function report() {
     if (!socket || !ready) return;
-    socket.emit("screen:status", { videoId: loadedId, state: loadedId ? ytState : "idle", time: yt.getCurrentTime?.() || 0, duration: yt.getDuration?.() || 0 });
+    let title = ""; try { title = bgPlaying ? (bg.getVideoData?.().title || "") : ""; } catch {}
+    socket.emit("screen:status", { videoId: loadedId, state: loadedId ? ytState : "idle", time: yt.getCurrentTime?.() || 0, duration: yt.getDuration?.() || 0, filler: { playing: bgPlaying, title, paused: bgManualPause } });
   }
   function showBadge() {
     const cur = S?.current; if (!cur) return;
@@ -203,6 +280,7 @@
       hero.innerHTML = `<div class="pic dj" style="background-image:url('${photo}')" role="img" aria-label="Lopee J alla consolle"></div>
         <div>${kicker(S.settings.open ? "Il palco è libero" : "Prenotazioni chiuse")}<div class="who">${S.settings.open ? "Chi canta?" : "Grazie a tutti!"}</div><div class="what">${S.settings.open ? "Inquadra il QR, scegli la canzone e fatti un selfie: <b>ti chiamiamo sul palco</b>." : "Alla prossima serata con <b>Lopee J</b>."}</div></div>`;
     }
+    applyFiller();
     $("#nextBox").innerHTML = next.length ? `${kicker("Prossimi")}<ol class="upnext">${next.slice(0, 4).map((q, i) => `<li><span class="n">${i + 1}</span>${avatarHTML(q)}<div><b>${esc(q.singer)}</b> <span class="t">· ${esc(q.title)}</span></div></li>`).join("")}</ol>` : "";
   }
   // a palco libero alterna le due foto di Lopee J
