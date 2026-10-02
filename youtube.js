@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 const API = "https://www.googleapis.com/youtube/v3";
-const CACHE_FILE = path.join(__dirname, "..", "data", "cache.json");
+const CACHE_FILE = path.join(process.cwd(), "data", "cache.json");
 const CACHE_TTL = 7 * 24 * 3600 * 1000;
 
 // Canali noti per basi karaoke di buona qualità
