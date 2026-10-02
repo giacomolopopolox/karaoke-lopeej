@@ -367,6 +367,12 @@ io.on("connection", (socket) => {
       if (player.state === "playing" && cur && cur.videoId === player.videoId && !cur.sang) { cur.sang = true; broadcast(); }
       if (player.state === "ended" && cur && cur.videoId && cur.videoId === player.videoId && voteOpen(cur)) reveal(cur, "end");
     });
+    socket.on("screen:problem", (why) => {
+      const msg = { notActive: "Lo schermo non è attivo: sul computer dello schermo premi «Attiva schermo».",
+        noVideo: "Lo schermo non ha ancora la base: controlla che la canzone abbia «base pronta», oppure ricarica lo schermo.",
+        blocked: "Il browser dello schermo ha bloccato l'avvio: clicca una volta sul pulsante verde che è comparso sullo schermo." }[why];
+      if (msg) io.to("dj").emit("notice", msg);
+    });
     socket.on("screen:error", ({ videoId, code }) => {
       const cur = current();
       if (!cur || cur.videoId !== videoId) return;

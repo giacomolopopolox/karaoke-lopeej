@@ -388,7 +388,9 @@
     const t = e.target.closest("[data-act]"); if (!t) return;
     const a = t.dataset.act, id = t.dataset.id;
     switch (a) {
-      case "play": return emit("dj:player", { cmd: player.state === "playing" ? "pause" : "play" });
+      case "play":
+        if (!S.screens) return showNotice("Schermo non collegato: sul computer dello schermo apri /schermo, inserisci il PIN e premi «Attiva schermo».");
+        return emit("dj:player", { cmd: player.state === "playing" ? "pause" : "play" });
       case "restart": return emit("dj:player", { cmd: "restart" });
       case "back": return emit("dj:player", { cmd: "seek", value: -10 });
       case "fwd": return emit("dj:player", { cmd: "seek", value: 10 });
