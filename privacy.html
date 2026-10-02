@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Informativa privacy · Canta con Lopee J!</title>
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+  article{max-width:65ch}
+  article h1{font-size:clamp(24px,6vw,32px);margin:8px 0 4px}
+  article h2{font-size:17px;margin:26px 0 6px;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:10px}
+  article h2::before{content:"";width:14px;height:11px;flex:none;background:linear-gradient(var(--lime) 0 3px,transparent 3px 4px,var(--lime) 4px 7px,transparent 7px 8px,var(--lime) 8px 11px)}
+  article p,article li{color:var(--fg);line-height:1.65}
+  article ul{padding-left:20px}
+  .meta{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap narrow">
+  <header class="top"><a href="/" class="brand" style="font-size:20px;text-decoration:none" id="brand"></a></header>
+  <article>
+    <span class="label">Privacy</span>
+    <h1>Informativa sul trattamento dei dati</h1>
+    <p class="meta">Ai sensi degli articoli 13 e 14 del Regolamento UE 2016/679 (GDPR)</p>
+
+    <h2>Chi tratta i dati</h2>
+    <p>Titolare del trattamento è <b>Lopee J</b>, DJ e organizzatore della serata karaoke. Per qualsiasi richiesta sulla privacy puoi scrivere a: <b id="contact">chiedi direttamente al DJ in sala</b>.</p>
+
+    <h2>Quali dati raccogliamo</h2>
+    <ul>
+      <li>il nome o soprannome che scrivi per la prenotazione;</li>
+      <li>il titolo e l'artista della canzone scelta;</li>
+      <li>il selfie, solo se decidi di scattarlo (è facoltativo).</li>
+    </ul>
+    <p>Non chiediamo numero di telefono, email o altri dati di contatto e non usiamo i dati per profilazione o pubblicità.</p>
+
+    <h2>Perché e su quale base</h2>
+    <p>Usiamo i dati solo per gestire la coda del karaoke, chiamarti sul palco e mostrare il tuo nome, la canzone e l'eventuale selfie sullo schermo in sala. La base giuridica è il tuo consenso, che dai spuntando la casella al momento della prenotazione.</p>
+
+    <h2>Chi li vede</h2>
+    <p>Il nome e la canzone sono visibili a chi apre la pagina delle prenotazioni e sullo schermo della serata. Il selfie è visibile solo al DJ in regia e sullo schermo in sala quando tocca a te. I dati non vengono ceduti a terzi. Il servizio è ospitato su un server cloud (Render) che agisce come fornitore tecnico; le basi musicali vengono riprodotte tramite YouTube.</p>
+
+    <h2>Per quanto tempo</h2>
+    <ul>
+      <li>il <b>selfie</b> viene cancellato automaticamente appena finisci di cantare, oppure se annulli la prenotazione;</li>
+      <li>nome e canzone vengono cancellati a fine serata, quando il DJ svuota la coda.</li>
+    </ul>
+
+    <h2>I tuoi diritti</h2>
+    <p>Puoi revocare il consenso in qualsiasi momento annullando la prenotazione dalla pagina delle prenotazioni, oppure chiedendo al DJ di togliere il tuo selfie o la tua prenotazione. Hai diritto di accesso, rettifica, cancellazione e limitazione dei dati, e puoi presentare reclamo al Garante per la protezione dei dati personali (<a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">garanteprivacy.it</a>).</p>
+
+    <p style="margin-top:28px"><a class="btn primary" href="/">Torna alle prenotazioni</a></p>
+  </article>
+</div>
+<script src="/common.js"></script>
+<script>
+  K.$("#brand").innerHTML = K.brandHTML("Canta con Lopee J!");
+  fetch("/api/info").then((r) => r.json()).then((i) => { if (i.privacyContact) K.$("#contact").textContent = i.privacyContact; }).catch(() => {});
+</script>
+</body>
+</html>

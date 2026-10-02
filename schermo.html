@@ -3,45 +3,71 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Schermo · Karaoke Night</title>
+<title>Schermo · Canta con Lopee J!</title>
+<link rel="icon" href="/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="/style.css">
 <style>
   /* Lo schermo resta sempre scuro: è pensato per proiettore e TV in sala */
-  :root{--bg:#0e0a13;--surface:#1f1729;--surface-2:#2a2036;--line:#3a2e49;--fg:#f3ecfa;--muted:#a898b8;--bulb:#f2ae4b;--mag:#ef6aa5;--mag-soft:#3d1a2c;color-scheme:dark}
+  :root{--bg:#0b0e08;--surface:#171b11;--surface-2:#20261a;--line:#2e3626;--fg:#f2f6ea;--muted:#9aa58c;--lime:#8acb2c;--lime-ink:#9ad93a;--lime-soft:#1f2c10;--on-lime:#0c1006;--live:#ff5a6e;--live-soft:#3a1419;color-scheme:dark}
   html,body{height:100%;overflow:hidden;background:#000}
   #stage{position:fixed;inset:0;background:#000}
   #player,#player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(20px,4vw,56px);
-    background:radial-gradient(ellipse at 20% 0%,rgba(242,174,75,.22),transparent 55%),rgba(14,10,19,.86);transition:opacity .4s}
+
+  .overlay{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:clamp(16px,3vh,40px);padding:clamp(20px,4vw,56px);
+    background:radial-gradient(ellipse at 85% 10%,rgba(138,203,44,.16),transparent 55%),rgba(11,14,8,.94);transition:opacity .45s}
   .overlay.hide{opacity:0;pointer-events:none}
-  .marquee{font-family:var(--f-display);color:var(--bulb);font-size:clamp(22px,3vw,40px);text-shadow:0 0 22px rgba(242,174,75,.5)}
-  .hero .label{font-size:clamp(12px,1.3vw,18px)}
-  .hero .who{font-family:var(--f-display);font-size:clamp(40px,8vw,120px);line-height:1;color:var(--fg);margin-top:10px;text-wrap:balance;overflow-wrap:anywhere}
-  .hero .what{font-size:clamp(20px,3vw,40px);color:var(--muted);margin-top:14px;text-wrap:balance}
-  .hero .what b{color:var(--fg)}
+  .overlay .brand{font-size:clamp(20px,2.6vw,38px);color:var(--fg)}
+
+  .hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(24px,4vw,64px);align-items:center;min-height:0}
+  .hero.no-pic{grid-template-columns:minmax(0,1fr)}
+  .pic{width:min(38vh,30vw);aspect-ratio:1;border-radius:8px;background:var(--surface-2) center/cover no-repeat;border:clamp(4px,.5vw,8px) solid var(--lime);
+    display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:min(14vh,11vw);color:var(--lime);box-shadow:0 0 80px rgba(138,203,44,.25)}
+  .pic.dj{aspect-ratio:3/4;width:min(44vh,26vw);border-width:0;border-left:clamp(6px,.7vw,10px) solid var(--lime);box-shadow:none}
+  .kicker{display:flex;align-items:center;gap:14px;font-family:var(--f-display);font-weight:600;font-size:clamp(14px,1.6vw,24px);letter-spacing:.2em;text-transform:uppercase;color:var(--lime)}
+  .kicker .bars{width:clamp(18px,1.8vw,28px);height:clamp(14px,1.4vw,22px);background:linear-gradient(var(--lime) 0 27%,transparent 27% 36.5%,var(--lime) 36.5% 63.5%,transparent 63.5% 73%,var(--lime) 73% 100%)}
+  .who{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:clamp(44px,8.5vw,140px);line-height:.95;margin-top:clamp(8px,1.4vh,18px);text-wrap:balance;overflow-wrap:anywhere}
+  .what{font-size:clamp(20px,2.8vw,42px);color:var(--muted);margin-top:clamp(10px,2vh,22px);text-wrap:balance}
+  .what b{color:var(--fg);font-weight:600}
+
   .foot{display:flex;gap:clamp(16px,3vw,40px);align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
-  .upnext{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:clamp(16px,1.8vw,26px)}
-  .upnext li{display:flex;gap:14px;align-items:baseline}
-  .upnext .n{font-family:var(--f-mono);color:var(--bulb);min-width:1.6em}
-  .upnext span{color:var(--muted)}
-  .book{display:flex;gap:16px;align-items:center;background:rgba(255,255,255,.06);padding:12px;border-radius:14px}
-  .book img{width:clamp(96px,10vw,150px);height:auto;border-radius:8px;background:#fff;padding:5px}
-  .book b{display:block;font-size:clamp(16px,1.6vw,24px)}
-  .book span{color:var(--muted);font-family:var(--f-mono);font-size:clamp(12px,1.1vw,16px);overflow-wrap:anywhere}
-  .badge{position:absolute;top:clamp(12px,2vw,28px);left:clamp(12px,2vw,28px);display:flex;gap:10px;align-items:center;padding:10px 18px;border-radius:999px;background:rgba(14,10,19,.82);font-weight:700;font-size:clamp(16px,1.8vw,26px);color:var(--mag);transition:opacity .6s;pointer-events:none}
+  .upnext{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:clamp(16px,1.7vw,26px)}
+  .upnext li{display:flex;gap:14px;align-items:center}
+  .upnext .n{font-family:var(--f-mono);color:var(--lime);min-width:1.4em}
+  .upnext .avatar{width:1.9em;height:1.9em;font-size:.7em}
+  .upnext span.t{color:var(--muted)}
+  .book{display:flex;gap:16px;align-items:center;background:var(--surface);border-left:6px solid var(--lime);padding:14px 18px 14px 14px;border-radius:4px}
+  .book img{width:clamp(96px,10vw,160px);height:auto;border-radius:3px;background:#fff;padding:5px}
+  .book b{display:block;font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:clamp(16px,1.6vw,26px)}
+  .book span{color:var(--muted);font-family:var(--f-mono);font-size:clamp(12px,1.1vw,17px);overflow-wrap:anywhere}
+
+  /* la chiamata sul palco: le tre barre della E attraversano lo schermo */
+  .wipe{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:5vh;pointer-events:none;z-index:5}
+  .wipe i{display:block;height:9vh;background:var(--lime);transform:scaleX(0);transform-origin:left}
+  .calling .wipe i{animation:wipe 1.25s cubic-bezier(.7,0,.2,1) both}
+  .calling .wipe i:nth-child(2){animation-delay:.08s}
+  .calling .wipe i:nth-child(3){animation-delay:.16s}
+  @keyframes wipe{0%{transform:scaleX(0);transform-origin:left}45%{transform:scaleX(1);transform-origin:left}55%{transform:scaleX(1);transform-origin:right}100%{transform:scaleX(0);transform-origin:right}}
+  .calling .hero > *{animation:reveal .7s .7s cubic-bezier(.2,.8,.2,1) both}
+  .calling .hero > *:nth-child(2){animation-delay:.82s}
+  @keyframes reveal{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+
+  .badge{position:absolute;top:clamp(12px,2vw,28px);left:clamp(12px,2vw,28px);display:flex;gap:12px;align-items:center;padding:8px 18px 8px 8px;border-radius:4px;background:rgba(11,14,8,.86);border-left:5px solid var(--lime);font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:clamp(16px,1.8vw,26px);transition:opacity .6s;pointer-events:none}
+  .badge .avatar{width:2.2em;height:2.2em;font-size:.6em}
   .badge.hide{opacity:0}
-  .tools{position:absolute;right:16px;bottom:16px;display:flex;gap:8px;opacity:0;transition:opacity .3s}
+  .tools{position:absolute;right:16px;bottom:16px;display:flex;gap:8px;opacity:0;transition:opacity .3s;z-index:6}
   #stage:hover .tools{opacity:1}
   .start{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:30;padding:16px}
-  .start .card{max-width:420px;text-align:center;display:flex;flex-direction:column;gap:14px}
+  .start .card{max-width:440px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+  .start .brand{font-size:26px;justify-content:center}
+  @media (prefers-reduced-motion:reduce){.calling .wipe i{animation:none}.calling .hero > *{animation:none}}
 </style>
 </head>
 <body>
 <div class="gate" id="gate" hidden>
   <form class="card" id="gateForm">
-    <div class="sign">Schermo<small>Karaoke Night</small></div>
+    <div><div class="brand"><span>Schermo</span><img class="logo" src="/logo.png" alt="Lopee J"></div><div class="brand-sub">Canta con Lopee J!</div></div>
     <div class="field"><label for="pin">PIN della regia</label><input type="password" id="pin" autocomplete="current-password" required></div>
     <div class="err-text" id="gateErr"></div>
     <button class="btn primary big" type="submit">Collega</button>
@@ -50,8 +76,8 @@
 
 <div class="start" id="start" hidden>
   <div class="card">
-    <div class="sign">Schermo pronto</div>
-    <p style="margin:0;color:var(--muted)">Premi il pulsante per attivare video e audio, poi porta questa finestra sul proiettore e mettila a schermo intero.</p>
+    <div class="brand" id="startBrand"></div>
+    <p style="margin:0;color:var(--muted)">Premi il pulsante per attivare video e audio, poi porta questa finestra sul proiettore a schermo intero.</p>
     <button class="btn primary big" id="startBtn">Attiva schermo</button>
   </div>
 </div>
@@ -60,12 +86,13 @@
   <div id="player"></div>
   <div class="badge hide" id="badge"></div>
   <div class="overlay" id="overlay">
-    <div class="marquee" id="nightName">Karaoke Night</div>
+    <div class="brand" id="nightName"></div>
     <div class="hero" id="hero"></div>
     <div class="foot">
       <div id="nextBox"></div>
       <div class="book"><img src="/qr.svg" alt=""><div><b>Prenota la tua canzone</b><span id="guestUrl"></span></div></div>
     </div>
+    <div class="wipe" aria-hidden="true"><i></i><i></i><i></i></div>
   </div>
   <div class="tools"><button class="btn sm" id="fsBtn">Schermo intero</button></div>
 </div>
@@ -74,8 +101,11 @@
 <script src="/common.js"></script>
 <script>
 (function () {
-  const { $, esc, store } = K;
-  let S = null, socket = null, yt = null, ready = false, loadedId = null, pending = null, ytState = "idle", celebrate = null, badgeTimer = null;
+  const { $, esc, store, brandHTML, avatarHTML, initials } = K;
+  let S = null, socket = null, yt = null, ready = false, loadedId = null, pending = null, ytState = "idle";
+  let celebrate = null, badgeTimer = null, lastCalledId = null, djPhoto = 0;
+  $("#startBrand").innerHTML = brandHTML("Canta con Lopee J!");
+  $("#nightName").innerHTML = brandHTML("Canta con Lopee J!");
 
   fetch("/api/info").then((r) => r.json()).then((i) => { $("#guestUrl").textContent = i.guestUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""); }).catch(() => {});
 
@@ -105,7 +135,7 @@
         onStateChange: (e) => {
           const map = { "-1": "unstarted", 0: "ended", 1: "playing", 2: "paused", 3: "buffering", 5: "cued" };
           ytState = map[e.data] || "idle";
-          if (ytState === "ended" && S?.current) celebrate = S.current.singer;
+          if (ytState === "ended" && S?.current) celebrate = { ...S.current };
           if (ytState === "playing") { celebrate = null; showBadge(); }
           render(); report();
         },
@@ -134,26 +164,49 @@
   }
   function showBadge() {
     const cur = S?.current; if (!cur) return;
-    const b = $("#badge"); b.textContent = "🎤 " + cur.singer; b.classList.remove("hide");
-    clearTimeout(badgeTimer); badgeTimer = setTimeout(() => b.classList.add("hide"), 8000);
+    const b = $("#badge"); b.innerHTML = `${avatarHTML(cur)}<span>${esc(cur.singer)}</span>`; b.classList.remove("hide");
+    clearTimeout(badgeTimer); badgeTimer = setTimeout(() => b.classList.add("hide"), 9000);
   }
 
   // ---------- grafica ----------
+  const kicker = (t) => `<div class="kicker"><span class="bars"></span>${esc(t)}</div>`;
+  const pic = (item) => item.selfie
+    ? `<div class="pic" style="background-image:url('${esc(item.selfie)}')" role="img" aria-label="Selfie di ${esc(item.singer)}"></div>`
+    : `<div class="pic" aria-hidden="true">${esc(initials(item.singer))}</div>`;
+
   function render() {
     if (!S) return;
-    $("#nightName").textContent = S.settings.name;
+    $("#nightName").innerHTML = brandHTML(S.settings.name);
     const cur = S.current, next = S.next || [];
     const playing = ytState === "playing" || ytState === "buffering";
-    $("#overlay").classList.toggle("hide", playing && !!cur);
-    if (celebrate) {
-      $("#hero").innerHTML = `<div class="label">Un applauso per</div><div class="who">${esc(celebrate)}</div>${next[0] ? `<div class="what">Ora tocca a <b>${esc(next[0].singer)}</b></div>` : ""}`;
-    } else if (cur) {
-      $("#hero").innerHTML = `<div class="label">Sul palco</div><div class="who">${esc(cur.singer)}</div><div class="what"><b>${esc(cur.title)}</b>${cur.artist ? " · " + esc(cur.artist) : ""}</div>`;
-    } else {
-      $("#hero").innerHTML = `<div class="label">${S.settings.open ? "Il palco è libero" : "Prenotazioni chiuse"}</div><div class="who">Chi canta?</div><div class="what">${S.settings.open ? "Inquadra il QR e mettiti in coda" : "Grazie a tutti per la serata!"}</div>`;
+    const ov = $("#overlay");
+    ov.classList.toggle("hide", playing && !!cur);
+
+    // nuovo cantante chiamato sul palco: parte l'animazione
+    if (cur && cur.id !== lastCalledId) {
+      lastCalledId = cur.id;
+      ov.classList.remove("calling"); void ov.offsetWidth; ov.classList.add("calling");
+      setTimeout(() => ov.classList.remove("calling"), 2200);
     }
-    $("#nextBox").innerHTML = next.length ? `<div class="label">Prossimi</div><ol class="upnext">${next.slice(0, 4).map((q, i) => `<li><span class="n">${i + 1}</span><div><b>${esc(q.singer)}</b> <span>· ${esc(q.title)}</span></div></li>`).join("")}</ol>` : "";
+    if (!cur) lastCalledId = null;
+
+    const hero = $("#hero");
+    if (celebrate) {
+      hero.className = "hero";
+      hero.innerHTML = `${pic(celebrate)}<div>${kicker("Un applauso per")}<div class="who">${esc(celebrate.singer)}</div>${next[0] ? `<div class="what">Ora tocca a <b>${esc(next[0].singer)}</b></div>` : ""}</div>`;
+    } else if (cur) {
+      hero.className = "hero";
+      hero.innerHTML = `${pic(cur)}<div>${kicker("Sul palco")}<div class="who">${esc(cur.singer)}</div><div class="what"><b>${esc(cur.title)}</b>${cur.artist ? " · " + esc(cur.artist) : ""}</div></div>`;
+    } else {
+      hero.className = "hero";
+      const photo = djPhoto % 2 ? "/dj-paillettes.jpg" : "/dj-capitano.jpg";
+      hero.innerHTML = `<div class="pic dj" style="background-image:url('${photo}')" role="img" aria-label="Lopee J alla consolle"></div>
+        <div>${kicker(S.settings.open ? "Il palco è libero" : "Prenotazioni chiuse")}<div class="who">${S.settings.open ? "Chi canta?" : "Grazie a tutti!"}</div><div class="what">${S.settings.open ? "Inquadra il QR, scegli la canzone e fatti un selfie: <b>ti chiamiamo sul palco</b>." : "Alla prossima serata con <b>Lopee J</b>."}</div></div>`;
+    }
+    $("#nextBox").innerHTML = next.length ? `${kicker("Prossimi")}<ol class="upnext">${next.slice(0, 4).map((q, i) => `<li><span class="n">${i + 1}</span>${avatarHTML(q)}<div><b>${esc(q.singer)}</b> <span class="t">· ${esc(q.title)}</span></div></li>`).join("")}</ol>` : "";
   }
+  // a palco libero alterna le due foto di Lopee J
+  setInterval(() => { if (S && !S.current && !celebrate) { djPhoto++; render(); } }, 20000);
 
   $("#fsBtn").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch {} };
 })();

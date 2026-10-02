@@ -3,38 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Regia · Karaoke Night</title>
+<title>Regia · Canta con Lopee J!</title>
+<link rel="icon" href="/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="/style.css">
 <style>
   .grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px}
   @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
   .col{display:flex;flex-direction:column;gap:20px;min-width:0}
-  .stage{position:relative;padding:20px;border-radius:14px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
-  .stage::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 12% -25%,color-mix(in srgb,var(--bulb) 22%,transparent),transparent 60%);pointer-events:none}
+  .stage{position:relative;padding:20px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);overflow:hidden}
+  .stage::before{content:"";position:absolute;inset:0;background:linear-gradient(var(--lime) 0 0) top left/100% 4px no-repeat;pointer-events:none}
   .stage > *{position:relative}
-  .now-title{font-size:clamp(22px,3.2vw,30px);font-weight:700;line-height:1.15;margin-top:6px;text-wrap:balance}
+  .now-title{font-family:var(--f-display);font-size:clamp(22px,3.2vw,30px);font-weight:600;line-height:1.15;margin-top:6px;text-wrap:balance}
   .now-artist{color:var(--muted);font-size:16px}
-  .singer{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:6px 12px;border-radius:999px;background:var(--mag-soft);color:var(--mag);font-weight:700}
+  .on-stage{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+  .on-stage .avatar{width:96px;height:96px;font-size:32px;border:3px solid var(--lime);border-radius:6px}
+  .singer{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:5px 12px;border-radius:4px;background:var(--live-soft);color:var(--live);font-weight:700}
+  .singer::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--live)}
+  @media (max-width:520px){.on-stage{grid-template-columns:minmax(0,1fr)}}
   .transport{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
   .progress{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--muted)}
   .bar{flex:1;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
-  .bar i{display:block;height:100%;width:0;background:var(--bulb);transition:width .9s linear}
-  .notice{padding:10px 14px;border-radius:var(--r);background:var(--bulb-soft);font-size:14px}
+  .bar i{display:block;height:100%;width:0;background:var(--lime);transition:width .9s linear}
+  .notice{padding:10px 14px;border-radius:var(--r);background:var(--warn-soft);font-size:14px}
 
   .queue > li.open{background:var(--surface-2)}
   .queue > li.panel-li{display:block;background:var(--surface-2);border-top:0;padding:2px 14px 16px}
   .row-actions{display:flex;gap:0;flex-wrap:wrap;justify-content:flex-end}
-  .next-up .pos{color:var(--bulb);font-weight:700}
+  .next-up .pos{color:var(--lime-ink);font-weight:700}
+  .queue > li{grid-template-columns:28px 36px minmax(0,1fr) auto}
 
   .base{display:flex;flex-direction:column;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
   .panel-li .base{margin-top:6px;padding-top:0;border-top:0}
   .cands{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto}
-  .cand{display:grid;grid-template-columns:112px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
-  .cand.used{border-color:var(--bulb);box-shadow:0 0 0 1px var(--bulb)}
+  .cand{display:grid;grid-template-columns:112px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+  .cand.used{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime)}
   .cand.failed{opacity:.5}
-  .thumb{width:112px;aspect-ratio:16/9;border-radius:5px;background:var(--surface-2) center/cover no-repeat;position:relative}
+  .thumb{width:112px;aspect-ratio:16/9;border-radius:3px;background:var(--surface-2) center/cover no-repeat;position:relative}
   .thumb .dur{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.75);color:#fff;font-family:var(--f-mono);font-size:11px;padding:0 4px;border-radius:3px}
   .cand .t{font-weight:600;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
   .cand .m{color:var(--muted);font-size:12px;margin-top:2px}
@@ -47,15 +53,15 @@
 
   .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
   .stat{background:var(--surface);padding:12px 14px}
-  .stat b{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:22px}
+  .stat b{display:block;color:var(--lime-ink);font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:22px}
   .stat span{font-size:12px;color:var(--muted)}
   .qr{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;align-items:center}
-  .qr img{width:120px;height:120px;border-radius:8px;background:#fff;padding:4px}
+  .qr img{width:120px;height:120px;border-radius:4px;background:#fff;padding:4px}
   .url{font-family:var(--f-mono);font-size:13px;overflow-wrap:anywhere}
   .switch{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .toggle{position:relative;width:46px;height:26px;border-radius:999px;border:0;background:var(--line);cursor:pointer;flex:none}
   .toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
-  .toggle[aria-checked="true"]{background:var(--ok)}
+  .toggle[aria-checked="true"]{background:var(--lime)}
   .toggle[aria-checked="true"]::after{transform:translateX(20px)}
   details summary{cursor:pointer;font-weight:600}
   .history > li{opacity:.75}
@@ -64,7 +70,7 @@
 <body>
 <div class="gate" id="gate">
   <form class="card" id="gateForm">
-    <div class="sign">Regia<small>Karaoke Night</small></div>
+    <div><div class="brand"><span>Regia</span><img class="logo" src="/logo.png" alt="Lopee J"></div><div class="brand-sub">Canta con Lopee J!</div></div>
     <div class="field"><label for="pin">PIN della regia</label><input type="password" id="pin" autocomplete="current-password" required></div>
     <div class="err-text" id="gateErr"></div>
     <button class="btn primary big" type="submit">Entra</button>
@@ -73,7 +79,7 @@
 
 <div class="wrap">
   <header class="top">
-    <div class="sign"><span id="nightName">Karaoke Night</span><small>Regia · Lopee J</small></div>
+    <div><div class="brand" id="nightName"></div><div class="brand-sub">Regia</div></div>
     <div class="row">
       <span class="chip" id="ytChip"></span>
       <span class="chip" id="screenChip"></span>
@@ -129,6 +135,7 @@
           <div class="field"><label for="setMax">Canzoni per persona</label><input type="number" id="setMax" min="1" max="10"></div>
           <div class="field"><label for="setMin">Minuti a canzone</label><input type="number" id="setMin" min="2" max="10"></div>
         </div>
+        <div class="switch"><span><b>Selfie sullo schermo</b><br><span style="font-size:13px;color:var(--muted)">Se spento, sullo schermo compaiono solo le iniziali</span></span><button class="toggle" id="setSelfies" role="switch" aria-checked="true" aria-label="Selfie sullo schermo" type="button"></button></div>
       </section>
 
       <section class="card stack">
@@ -144,7 +151,7 @@
 <script src="/common.js"></script>
 <script>
 (function () {
-  const { $, esc, store, toast, fmtTime, setStatus } = K;
+  const { $, esc, store, toast, fmtTime, setStatus, brandHTML, avatarHTML } = K;
   let S = null, socket = null, openId = null, confirmReset = false, player = { state: "idle", time: 0, duration: 0 };
 
   // ---------- accesso ----------
@@ -202,7 +209,7 @@
         <li class="cand${c.id === q.videoId ? " used" : ""}${failed.includes(c.id) ? " failed" : ""}">
           <div class="thumb" style="background-image:url('${esc(c.thumb || `https://i.ytimg.com/vi/${c.id}/mqdefault.jpg`)}')">${c.duration ? `<span class="dur">${fmtTime(c.duration)}</span>` : ""}</div>
           <div class="song"><div class="t">${esc(c.title)}</div><div class="m">${esc(c.channel || "")}</div>
-            <div class="tags">${(c.tags || []).map((t) => `<span class="chip">${esc(t)}</span>`).join("")}${c.manual ? '<span class="chip mag">scelta a mano</span>' : ""}${failed.includes(c.id) ? '<span class="chip err">non riproducibile</span>' : ""}</div></div>
+            <div class="tags">${(c.tags || []).map((t) => `<span class="chip">${esc(t)}</span>`).join("")}${c.manual ? '<span class="chip lime">scelta a mano</span>' : ""}${failed.includes(c.id) ? '<span class="chip err">non riproducibile</span>' : ""}</div></div>
           <div class="side">${c.id === q.videoId ? '<span class="chip ok">in uso</span>' : `<button class="btn sm" data-act="use" data-id="${q.id}" data-v="${esc(c.id)}">Usa questa</button>`}
             <a class="btn sm" href="https://www.youtube.com/watch?v=${esc(c.id)}" target="_blank" rel="noopener">Anteprima ↗</a></div>
         </li>`).join("")}</ul>` : ""}
@@ -217,7 +224,7 @@
     const keep = {}; document.querySelectorAll("[data-keep]").forEach((i) => { keep[i.id] = { v: i.value, dirty: i.dataset.dirty === "1" }; });
     const focusId = document.activeElement?.id;
 
-    $("#nightName").textContent = S.settings.name;
+    $("#nightName").innerHTML = brandHTML(S.settings.name);
     $("#ytChip").className = "chip " + (S.youtube.enabled ? "ok" : "warn");
     $("#ytChip").textContent = S.youtube.enabled ? `YouTube · ${S.youtube.searchesToday} ricerche oggi` : "Ricerca YouTube spenta";
     $("#ytChip").title = S.youtube.enabled ? "La quota gratuita permette circa 100 ricerche al giorno; le ricerche ripetute usano la cache" : "Aggiungi YOUTUBE_API_KEY nel file .env";
@@ -228,9 +235,14 @@
     const playing = player.state === "playing";
     $("#stage").innerHTML = cur ? `
       <span class="label">Sul palco</span>
-      <div class="now-title">${esc(cur.title)}</div>
-      <div class="now-artist">${esc(cur.artist || "Artista non indicato")}</div>
-      <div class="singer">🎤 ${esc(cur.singer)}</div>
+      <div class="on-stage" style="margin-top:10px">
+        <div class="stack" style="gap:6px;align-items:center">${avatarHTML(cur)}${cur.selfie ? `<button class="btn sm" data-act="hideSelfie" data-id="${cur.id}" title="Toglie la foto dallo schermo e la cancella">Togli selfie</button>` : ""}</div>
+        <div class="song">
+          <div class="now-title" style="margin-top:0">${esc(cur.title)}</div>
+          <div class="now-artist">${esc(cur.artist || "Artista non indicato")}</div>
+          <div class="singer">${esc(cur.singer)}</div>
+        </div>
+      </div>
       <div class="transport">
         <button class="btn primary" data-act="play" ${cur.videoId ? "" : "disabled"}>${playing ? "❚❚ Pausa" : "▶ Play"}</button>
         <button class="btn" data-act="restart" ${cur.videoId ? "" : "disabled"} title="Ricomincia">⟲ Da capo</button>
@@ -254,7 +266,8 @@
       const isOpen = openId === q.id;
       return `<li class="${i === 0 ? "next-up" : ""}${isOpen ? " open" : ""}">
         <span class="pos">${i + 1}</span>
-        <div class="song"><b>${esc(q.title)} ${baseChip(q)}${q.source === "guest" ? ' <span class="chip mag">dal telefono</span>' : ""}${over ? ' <span class="chip warn">oltre il limite</span>' : ""}</b>
+        ${avatarHTML(q)}
+        <div class="song"><b>${esc(q.title)} ${baseChip(q)}${q.source === "guest" ? ' <span class="chip lime">dal telefono</span>' : ""}${over ? ' <span class="chip warn">oltre il limite</span>' : ""}</b>
           <span>${esc(q.artist || "Artista non indicato")} · ${esc(q.singer)} · ~${(i + (cur ? 1 : 0)) * per} min</span></div>
         <div class="row-actions">
           <button class="icon-btn" title="Scegli la base" aria-label="Scegli la base" aria-expanded="${isOpen}" data-act="toggle" data-id="${q.id}">♫</button>
@@ -262,12 +275,13 @@
           <button class="icon-btn" title="Sposta giù" aria-label="Sposta giù" data-act="down" data-id="${q.id}">↓</button>
           <button class="icon-btn" title="In cima alla coda" aria-label="In cima alla coda" data-act="top" data-id="${q.id}">⤒</button>
           <button class="icon-btn" title="Canta adesso" aria-label="Canta adesso" data-act="now" data-id="${q.id}">▶</button>
+          ${q.selfie ? `<button class="icon-btn" title="Togli il selfie" aria-label="Togli il selfie" data-act="hideSelfie" data-id="${q.id}">⊘</button>` : ""}
           <button class="icon-btn" title="Rimuovi" aria-label="Rimuovi" data-act="del" data-id="${q.id}">✕</button>
         </div></li>${isOpen ? `<li class="panel-li">${basePanel(q)}</li>` : ""}`;
     }).join("")}</ol>` : `<div class="empty"><strong>La coda è vuota</strong>Fai inquadrare il QR agli ospiti, oppure aggiungi un cantante dal riquadro qui accanto.</div>`;
 
     $("#histCount").textContent = h.length;
-    $("#histBox").innerHTML = h.length ? `<ol class="list history">${h.map((q) => `<li><span class="pos">${q.status === "skipped" ? "–" : "✓"}</span><div class="song"><b>${esc(q.title)}</b><span>${esc(q.artist || "")} · ${esc(q.singer)}</span></div><button class="icon-btn" title="Rimetti in coda" aria-label="Rimetti in coda" data-act="requeue" data-id="${q.id}">↺</button></li>`).join("")}</ol>` : `<div class="empty">Ancora nessuna esibizione.</div>`;
+    $("#histBox").innerHTML = h.length ? `<ol class="list history">${h.map((q) => `<li><span class="pos">${q.status === "skipped" ? "–" : "✓"}</span>${avatarHTML(q)}<div class="song"><b>${esc(q.title)}</b><span>${esc(q.artist || "")} · ${esc(q.singer)}</span></div><button class="icon-btn" title="Rimetti in coda" aria-label="Rimetti in coda" data-act="requeue" data-id="${q.id}">↺</button></li>`).join("")}</ol>` : `<div class="empty">Ancora nessuna esibizione.</div>`;
 
     $("#sQueue").textContent = w.length;
     $("#sDone").textContent = S.queue.filter((q) => q.status === "done").length;
@@ -275,6 +289,7 @@
 
     sync("#setName", S.settings.name); sync("#setMax", S.settings.maxPerSinger); sync("#setMin", S.settings.minutesPerSong);
     $("#setOpen").setAttribute("aria-checked", String(!!S.settings.open));
+    $("#setSelfies").setAttribute("aria-checked", String(S.settings.showSelfies !== false));
     $("#resetArea").innerHTML = confirmReset
       ? `<div class="row"><span style="font-size:14px">Cancello coda e storico della serata?</span><button class="btn danger sm" data-act="resetyes">Sì, svuota</button><button class="btn sm" data-act="resetno">Annulla</button></div>`
       : `<button class="btn danger" data-act="reset">Svuota coda e storico</button>`;
@@ -311,6 +326,7 @@
       case "now": return emit("dj:singNow", id);
       case "del": return emit("dj:remove", id);
       case "requeue": return emit("dj:requeue", id);
+      case "hideSelfie": emit("dj:hideSelfie", id); return toast("Selfie tolto e cancellato");
       case "use": emit("dj:setVideo", { id, videoId: t.dataset.v }); return toast("Base cambiata");
       case "reset": confirmReset = true; return render();
       case "resetno": confirmReset = false; return render();
@@ -336,6 +352,7 @@
     $("#qSinger").value = ""; $("#qTitle").value = ""; $("#qArtist").value = ""; $("#qSinger").focus();
   });
   $("#setOpen").onclick = () => emit("dj:settings", { open: !S.settings.open });
+  $("#setSelfies").onclick = () => emit("dj:settings", { showSelfies: S.settings.showSelfies === false });
   $("#setName").onchange = (e) => emit("dj:settings", { name: e.target.value });
   $("#setMax").onchange = (e) => emit("dj:settings", { maxPerSinger: e.target.value });
   $("#setMin").onchange = (e) => emit("dj:settings", { minutesPerSong: e.target.value });
