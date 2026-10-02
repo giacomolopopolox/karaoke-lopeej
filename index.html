@@ -10,22 +10,22 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="/style.css">
 <style>
-  .hero{padding-block:22px 6px;display:flex;flex-direction:column;gap:10px}
-  .hero .brand{font-size:clamp(26px,8.4vw,40px);gap:.35em}
-  .hero p{margin:0;color:var(--muted);font-size:16px}
+  .hero{padding-block:8px 0;display:flex;flex-direction:column;gap:8px}
+  .hero .brand{font-size:clamp(22px,6.6vw,34px);gap:.35em}
+  .hero p{margin:0;color:var(--muted);font-size:15px;max-width:40ch}
   .now{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
   .now .live-dot{width:10px;height:10px;border-radius:50%;background:var(--live);box-shadow:0 0 0 4px var(--live-soft);flex:none;animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{50%{box-shadow:0 0 0 7px transparent}}
   .now b{font-weight:700}
   .step-n{font-family:var(--f-mono);font-size:12px;color:var(--lime-ink)}
 
-  .selfie{display:grid;grid-template-columns:104px minmax(0,1fr);gap:16px;align-items:center}
-  .shot{width:104px;height:104px;border-radius:6px;border:2px dashed var(--lime);background:var(--lime-soft) center/cover no-repeat;display:grid;place-items:center;cursor:pointer;position:relative;color:var(--lime-ink);font-size:30px}
+  .selfie{display:grid;grid-template-columns:88px minmax(0,1fr);gap:14px;align-items:center}
+  .shot{width:88px;height:88px;border-radius:6px;border:2px dashed var(--lime);background:var(--lime-soft) center/cover no-repeat;display:grid;place-items:center;cursor:pointer;position:relative;color:var(--lime-ink);font-size:30px}
   .shot.has{border-style:solid;font-size:0}
   .shot input{position:absolute;inset:0;opacity:0;cursor:pointer}
   .selfie p{margin:0;font-size:14px;color:var(--muted)}
   .done-card{text-align:center;padding:28px 18px;display:flex;flex-direction:column;align-items:center;gap:10px}
-  .done-card .big{font-family:var(--f-display);font-weight:700;font-size:72px;line-height:1;color:var(--lime)}
+  .done-card .big{font-family:var(--f-display);font-weight:700;font-size:clamp(52px,16vw,72px);line-height:1;color:var(--lime)}
   .done-card .avatar{width:96px;height:96px;font-size:30px;border:3px solid var(--lime)}
   .mine > li{grid-template-columns:44px 36px minmax(0,1fr) auto}
   .mine .pos{font-size:20px;color:var(--lime-ink);font-weight:700}
@@ -47,7 +47,7 @@
 </style>
 </head>
 <body>
-<div class="wrap narrow stack" style="gap:20px">
+<div class="wrap narrow stack" style="gap:18px">
   <header class="top" style="padding-bottom:0">
     <span class="label plain" style="letter-spacing:.2em">Karaoke live</span>
     <div class="status"><span class="dot" id="dot"></span><span id="statusText">Collegamento…</span></div>

@@ -23,6 +23,7 @@
 }}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg)}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--lime);outline-offset:2px}
@@ -30,8 +31,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 img{max-width:100%}
 a{color:var(--lime-ink)}
 
-.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 56px}
-.wrap.narrow{max-width:560px}
+/* margini laterali: più ampi sul telefono, rispettano anche le zone curve dello schermo */
+.wrap{max-width:1180px;margin:0 auto;padding-block:0 56px;
+  padding-left:max(clamp(20px,6vw,32px),env(safe-area-inset-left,0px));
+  padding-right:max(clamp(20px,6vw,32px),env(safe-area-inset-right,0px))}
+.wrap.narrow{max-width:520px}
 
 /* ---- marchio ---- */
 .brand{display:flex;align-items:center;gap:.45em;font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.08em;line-height:1;color:var(--fg);flex-wrap:wrap}
@@ -42,7 +46,7 @@ a{color:var(--lime-ink)}
 .bars{display:inline-block;width:14px;height:11px;flex:none;
   background:linear-gradient(var(--lime) 0 3px,transparent 3px 4px,var(--lime) 4px 7px,transparent 7px 8px,var(--lime) 8px 11px)}
 
-header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 14px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:max(18px,env(safe-area-inset-top,0px));padding-bottom:14px}
 header.top .brand{font-size:clamp(18px,3.4vw,24px)}
 .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
@@ -55,7 +59,7 @@ header.top .brand{font-size:clamp(18px,3.4vw,24px)}
 .label.plain::before{display:none}
 h1,h2{margin:0;font-family:var(--f-display);font-weight:600;letter-spacing:.02em}
 
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:clamp(16px,4.5vw,22px)}
 .stack{display:flex;flex-direction:column;gap:12px;min-width:0}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .spread{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
@@ -73,7 +77,8 @@ h1,h2{margin:0;font-family:var(--f-display);font-weight:600;letter-spacing:.02em
 
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field label{font-size:13px;font-weight:600}
-input[type=text],input[type=number],input[type=password],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
+/* 16px evita lo zoom automatico di iPhone quando si tocca un campo */
+input[type=text],input[type=number],input[type=password],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:4px;background:var(--bg);font-size:16px}
 input:focus{border-color:var(--lime)}
 input::placeholder{color:var(--muted)}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
