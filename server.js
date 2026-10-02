@@ -27,7 +27,8 @@ const SELFIE_DIR = path.join(DATA_DIR, "selfies");
 const SELFIE_TOKEN = crypto.randomBytes(16).toString("hex");
 
 // ---------- stato della serata ----------
-const DEFAULT_FILLER = { url: "", videoId: null, listId: null, enabled: true, volume: 60, visibility: 45 };
+// musica d'attesa predefinita: si può sempre cambiare dalla regia
+const DEFAULT_FILLER = { url: "https://youtu.be/WDswiT87oo8", videoId: "WDswiT87oo8", listId: null, enabled: true, volume: 60, visibility: 45 };
 const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
 
 // Musica d'attesa: accetta il link di un video o di una playlist YouTube
@@ -370,7 +371,7 @@ io.on("connection", (socket) => {
     socket.on("screen:problem", (why) => {
       const msg = { notActive: "Lo schermo non è attivo: sul computer dello schermo premi «Attiva schermo».",
         noVideo: "Lo schermo non ha ancora la base: controlla che la canzone abbia «base pronta», oppure ricarica lo schermo.",
-        blocked: "Il browser dello schermo ha bloccato l'avvio: clicca una volta sul pulsante verde che è comparso sullo schermo." }[why];
+        blocked: "Il browser dello schermo ha bloccato l'avvio: clicca una volta sul pallino verde con il punto esclamativo, in basso a sinistra sullo schermo." }[why];
       if (msg) io.to("dj").emit("notice", msg);
     });
     socket.on("screen:error", ({ videoId, code }) => {

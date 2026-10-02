@@ -92,7 +92,10 @@
   /* ---- voto: invito durante la canzone ---- */
   .live-singer .vote-live{margin-top:6px;display:inline-flex;align-items:center;gap:8px;padding:3px 10px;border-radius:3px;background:var(--lime);color:var(--on-lime);font-family:var(--f-display);font-weight:700;font-size:clamp(12px,1.1vw,17px);letter-spacing:.06em;text-transform:uppercase}
 
-  .tap-play{position:fixed;left:50%;top:50%;translate:-50% -50%;z-index:15;padding:clamp(18px,3vh,32px) clamp(28px,4vw,56px);border:0;border-radius:6px;background:var(--lime);color:var(--on-lime);font-family:var(--f-display);font-weight:700;font-size:clamp(20px,2.6vw,40px);text-transform:uppercase;letter-spacing:.04em;cursor:pointer;box-shadow:0 0 0 12px rgba(138,203,44,.25)}
+  /* pulsante di emergenza: piccolo, rotondo, in basso a sinistra */
+  .tap-play{position:fixed;left:clamp(14px,1.6vw,24px);bottom:clamp(14px,1.6vw,24px);z-index:15;width:clamp(44px,4.6vw,64px);aspect-ratio:1;border:0;border-radius:50%;background:var(--lime);color:var(--on-lime);
+    font-family:var(--f-display);font-weight:700;font-size:clamp(22px,2.4vw,34px);line-height:1;cursor:pointer;display:grid;place-items:center;animation:tapPulse 1.6s ease-in-out infinite}
+  @keyframes tapPulse{0%,100%{box-shadow:0 0 0 0 rgba(138,203,44,.55)}50%{box-shadow:0 0 0 12px rgba(138,203,44,0)}}
   .tap-play[hidden]{display:none}
   /* ---- classifica ---- */
   .board{list-style:none;margin:clamp(14px,2.4vh,28px) 0 0;padding:0;display:flex;flex-direction:column;gap:clamp(6px,1vh,12px);max-width:1100px}
@@ -171,7 +174,7 @@
   </div>
   <div class="tools"><button class="btn sm" id="fsBtn">Schermo intero</button></div>
 </div>
-<button class="tap-play" id="tapPlay" hidden type="button">▶ Clicca qui per far partire la base</button>
+<button class="tap-play" id="tapPlay" hidden type="button" title="Clicca per far partire la base" aria-label="Clicca per far partire la base">!</button>
 <div class="burst" id="burst" hidden role="dialog" aria-live="assertive"><div class="rays"></div><canvas id="confetti"></canvas><div class="card" id="burstCard"></div></div>
 
 <script src="/socket.io/socket.io.js"></script>
