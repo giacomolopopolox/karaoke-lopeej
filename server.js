@@ -10,7 +10,10 @@ const crypto = require("crypto");
 const express = require("express");
 const { Server } = require("socket.io");
 const QRCode = require("qrcode");
-const yt = require("./lib/youtube");
+// Funziona sia con le cartelle lib/ e public/ sia con tutti i file nella cartella principale
+const yt = fs.existsSync(path.join(__dirname, "lib", "youtube.js")) ? require("./lib/youtube") : require("./youtube");
+const PUBLIC_DIR = fs.existsSync(path.join(__dirname, "public")) ? path.join(__dirname, "public") : __dirname;
+const PAGES = new Set(["index.html", "regia.html", "schermo.html", "style.css", "common.js"]);
 
 const PORT = process.env.PORT || 3000;
 const DJ_PIN = String(process.env.DJ_PIN || "karaoke");
@@ -54,7 +57,12 @@ const sameSinger = (a, b) => yt.norm(a) === yt.norm(b);
 // ---------- server web ----------
 const app = express();
 app.set("trust proxy", true);
-app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
+// Pubblica solo le pagine dell'app (mai server.js, package.json o altri file)
+const sendPage = (name) => (req, res) => res.sendFile(path.join(PUBLIC_DIR, name));
+app.get("/", sendPage("index.html"));
+app.get(["/regia", "/regia.html"], sendPage("regia.html"));
+app.get(["/schermo", "/schermo.html"], sendPage("schermo.html"));
+app.get("/:file", (req, res, next) => PAGES.has(req.params.file) ? sendPage(req.params.file)(req, res) : next());
 
 function guestUrl(req) {
   if (PUBLIC_URL) return PUBLIC_URL + "/";
