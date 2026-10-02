@@ -35,6 +35,8 @@
     background:rgba(23,27,17,.82);border-left:6px solid var(--lime);border-radius:6px}
   .dj-banner .faces{display:flex;flex:none}
   .dj-banner .face{width:clamp(60px,9vh,112px);aspect-ratio:1;border-radius:50%;background:var(--surface-2) center/cover no-repeat;border:3px solid var(--lime);box-shadow:0 0 0 4px rgba(11,14,8,.9)}
+  .dj-banner .face.mic{display:grid;place-items:center;background:#11160c}
+  .dj-banner .face.mic svg{width:68%;height:68%}
   .dj-banner .face + .face{margin-left:calc(clamp(60px,9vh,112px) * -.28)}
   .dj-banner .k{display:block;font-family:var(--f-display);font-weight:600;font-size:clamp(11px,1vw,16px);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(6px,.8vh,10px)}
   .dj-banner .logo{display:block;height:clamp(22px,3.4vh,44px);width:auto}
@@ -389,7 +391,7 @@
     } else {
       hero.className = "hero no-pic";
       hero.innerHTML = `<div>${kicker(S.settings.open ? "Il palco è libero" : "Prenotazioni chiuse")}<div class="who">${S.settings.open ? "Chi canta?" : "Grazie a tutti!"}</div><div class="what">${S.settings.open ? "Inquadra il QR, scegli la canzone e fatti un selfie: <b>ti chiamiamo sul palco</b>." : "Alla prossima serata con <b>Lopee J</b>."}</div>
-        <div class="dj-banner"><div class="faces"><span class="face" style="background-image:url('/dj-faccia-1.jpg')" role="img" aria-label="Lopee J"></span><span class="face" style="background-image:url('/dj-faccia-2.jpg')" aria-hidden="true"></span></div><div><span class="k">Stasera alla console</span><img class="logo" src="/logo.png" alt="Lopee J"></div></div></div>`;
+        <div class="dj-banner"><div class="faces"><span class="face" style="background-image:url('/dj-faccia-2.jpg')" role="img" aria-label="Lopee J"></span><span class="face mic"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="micGrille"><path d="M39 40V21a11 11 0 0 1 22 0v19z"/></clipPath></defs><g fill="none" stroke="#8acb2c" stroke-linecap="round" stroke-linejoin="round"><path d="M29 57a21 6.5 0 0 1 42 0" stroke-width="2.6" opacity=".55"/><path d="M50 63.5V84M38 87h24" stroke-width="3.4"/><path d="M39 40V21a11 11 0 0 1 22 0v19z" fill="#141b0d" stroke-width="3"/><g clip-path="url(#micGrille)" stroke-width="1.6" opacity=".9"><path d="M30 14l30 30M30 22l30 30M30 30l30 30M30 6l30 30M38 2l30 30M70 14L40 44M70 22L40 52M70 6L40 36M62 2L32 32"/></g><path d="M39 44v20a4 4 0 0 0 4 4h14a4 4 0 0 0 4-4V44z" fill="#141b0d" stroke-width="3"/><path d="M45 68v4h10v-4" stroke-width="2.6"/><path d="M29 57a21 6.5 0 0 0 42 0" stroke-width="3"/><path d="M29.5 57l9.5-3M70.5 57l-9.5-3" stroke-width="1.6" opacity=".8"/></g><rect x="37.5" y="39" width="25" height="5.5" rx="1.5" fill="#8acb2c"/><circle cx="50" cy="51" r="2.4" fill="#8acb2c"/></svg></span></div><div><span class="k">Stasera alla console</span><img class="logo" src="/logo.png" alt="Lopee J"></div></div></div>`;
     }
     applyFiller();
     $("#nextBox").innerHTML = next.length ? `${kicker("Prossimi")}<ol class="upnext">${next.slice(0, 4).map((q, i) => `<li><span class="n">${i + 1}</span>${avatarHTML(q)}<div><b>${esc(q.singer)}</b> <span class="t">· ${esc(q.title)}</span></div></li>`).join("")}</ol>` : "";
