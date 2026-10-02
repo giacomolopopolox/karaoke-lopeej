@@ -152,6 +152,7 @@
         <form class="inline-form" id="fillerForm"><input type="text" id="fillerUrl" placeholder="Link YouTube di un video, mix o playlist" aria-label="Link della musica d'attesa"><button class="btn sm" type="submit">Salva</button></form>
         <div class="switch"><span><b>Automatica</b><br><span style="font-size:13px;color:var(--muted)">Parte e si ferma da sola tra una canzone e l'altra</span></span><button class="toggle" id="fillerOn" role="switch" aria-checked="true" aria-label="Musica d'attesa automatica" type="button"></button></div>
         <div class="field"><label for="fillerVol">Volume <span class="mono" id="fillerVolTxt"></span></label><input type="range" id="fillerVol" min="0" max="100" step="5"></div>
+        <div class="field"><label for="fillerVis">Video sullo schermo <span class="mono" id="fillerVisTxt"></span></label><input type="range" id="fillerVis" min="0" max="90" step="5"><span style="font-size:12px;color:var(--muted)">Quanto si vede il video dietro la grafica. A 0 resta solo l'audio.</span></div>
         <div class="row"><button class="btn sm" id="fillerSkip" type="button">Salta brano</button><button class="btn sm" id="fillerPause" type="button">Ferma ora</button></div>
       </section>
 
@@ -310,6 +311,7 @@
     const fl = S.settings.filler || {};
     $("#fillerOn").setAttribute("aria-checked", String(fl.enabled !== false));
     sync("#fillerUrl", fl.url); sync("#fillerVol", fl.volume ?? 60); $("#fillerVolTxt").textContent = (fl.volume ?? 60) + "%";
+    sync("#fillerVis", fl.visibility ?? 45); $("#fillerVisTxt").textContent = (fl.visibility ?? 45) ? (fl.visibility ?? 45) + "%" : "spento";
     renderFiller();
     $("#resetArea").innerHTML = confirmReset
       ? `<div class="row"><span style="font-size:14px">Cancello coda e storico della serata?</span><button class="btn danger sm" data-act="resetyes">Sì, svuota</button><button class="btn sm" data-act="resetno">Annulla</button></div>`
@@ -389,6 +391,8 @@
   $("#fillerOn").onclick = () => emit("dj:settings", { filler: { enabled: (S.settings.filler || {}).enabled === false } });
   $("#fillerVol").oninput = (e) => { $("#fillerVolTxt").textContent = e.target.value + "%"; };
   $("#fillerVol").onchange = (e) => emit("dj:settings", { filler: { volume: e.target.value } });
+  $("#fillerVis").oninput = (e) => { $("#fillerVisTxt").textContent = +e.target.value ? e.target.value + "%" : "spento"; };
+  $("#fillerVis").onchange = (e) => emit("dj:settings", { filler: { visibility: e.target.value } });
   $("#fillerSkip").onclick = () => emit("dj:filler", { cmd: "skip" });
   $("#fillerPause").onclick = () => emit("dj:filler", { cmd: (player.filler || {}).paused ? "resume" : "pause" });
   $("#setSelfies").onclick = () => emit("dj:settings", { showSelfies: S.settings.showSelfies === false });

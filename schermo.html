@@ -17,7 +17,12 @@
   #bgwrap{position:absolute;inset:0}
 
   .overlay{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:clamp(16px,3vh,40px);padding:clamp(20px,4vw,56px);
-    background:radial-gradient(ellipse at 85% 10%,rgba(138,203,44,.16),transparent 55%),rgba(11,14,8,.94);transition:opacity .45s}
+    --dim:.94;background:radial-gradient(ellipse at 85% 10%,rgba(138,203,44,.16),transparent 55%),rgba(11,14,8,var(--dim));transition:opacity .45s,background-color .8s}
+  /* il video della musica d'attesa traspare dietro la grafica */
+  .overlay.see-through{background:linear-gradient(to top,rgba(11,14,8,.88),rgba(11,14,8,0) 45%),linear-gradient(to bottom,rgba(11,14,8,.7),rgba(11,14,8,0) 30%),rgba(11,14,8,var(--dim))}
+  .overlay.see-through .who,.overlay.see-through .what,.overlay.see-through .kicker,.overlay.see-through .brand,.overlay.see-through .upnext{text-shadow:0 2px 18px rgba(0,0,0,.75)}
+  #player{transition:opacity .6s}
+  #player.behind{opacity:0;pointer-events:none}
   .overlay.hide{opacity:0;pointer-events:none}
   .overlay .brand{font-size:clamp(20px,2.6vw,38px);color:var(--fg)}
 
@@ -200,13 +205,22 @@
       if (pl && pl.length) { try { bg.setShuffle(true); bg.setLoop(true); } catch {} bg.playVideoAt(Math.floor(Math.random() * pl.length)); }
       else { bg.playVideo(); if (fillerCfg().listId) setTimeout(() => { try { bg.setShuffle(true); bg.setLoop(true); } catch {} }, 1500); }
       bgFirst = false;
-      fade(vol, 2500);
+      fade(vol, 2500); showFillerVideo();
     } else if (want && bgPlaying && !fading && Math.abs(bgVol - vol) > 1) {
       bgVol = vol; bg.setVolume(vol);
     } else if (!want && bgPlaying) {
-      bgPlaying = false;
+      bgPlaying = false; showFillerVideo();
       fade(0, 1200, () => { if (!bgPlaying) bg.pauseVideo(); });
     }
+  }
+  // mentre suona la musica d'attesa il suo video si vede in trasparenza
+  function showFillerVideo() {
+    const vis = Math.max(0, Math.min(90, fillerCfg().visibility ?? 45));
+    const on = bgPlaying && vis > 0 && !(ytState === "playing" || ytState === "buffering");
+    $("#player").classList.toggle("behind", on);
+    const ov = $("#overlay");
+    ov.classList.toggle("see-through", on);
+    ov.style.setProperty("--dim", on ? (1 - vis / 100).toFixed(2) : ".94");
   }
   function fillerCommand(c) {
     if (!bgReady) return;
@@ -227,7 +241,7 @@
     if (!ready || !loadedId) return;
     if (c.cmd === "play") {
       // la musica d'attesa sfuma mentre parte la base
-      if (bgPlaying) { bgPlaying = false; fade(0, 900, () => { if (!bgPlaying) bg.pauseVideo(); }); }
+      if (bgPlaying) { bgPlaying = false; showFillerVideo(); fade(0, 900, () => { if (!bgPlaying) bg.pauseVideo(); }); }
       yt.playVideo();
     }
     if (c.cmd === "pause") yt.pauseVideo();
@@ -258,6 +272,7 @@
     const playing = ytState === "playing" || ytState === "buffering";
     const ov = $("#overlay");
     ov.classList.toggle("hide", playing && !!cur);
+    showFillerVideo();
 
     // nuovo cantante chiamato sul palco: parte l'animazione
     if (cur && cur.id !== lastCalledId) {

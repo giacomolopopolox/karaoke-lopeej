@@ -27,7 +27,7 @@ const SELFIE_DIR = path.join(DATA_DIR, "selfies");
 const SELFIE_TOKEN = crypto.randomBytes(16).toString("hex");
 
 // ---------- stato della serata ----------
-const DEFAULT_FILLER = { url: "", videoId: null, listId: null, enabled: true, volume: 60 };
+const DEFAULT_FILLER = { url: "", videoId: null, listId: null, enabled: true, volume: 60, visibility: 45 };
 const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, filler: { ...DEFAULT_FILLER } };
 
 // Musica d'attesa: accetta il link di un video o di una playlist YouTube
@@ -372,6 +372,7 @@ io.on("connection", (socket) => {
       const f = st.filler;
       if (typeof s.filler.enabled === "boolean") f.enabled = s.filler.enabled;
       if (s.filler.volume != null) f.volume = Math.min(100, Math.max(0, parseInt(s.filler.volume) || 0));
+      if (s.filler.visibility != null) f.visibility = Math.min(90, Math.max(0, parseInt(s.filler.visibility) || 0));
       if (typeof s.filler.url === "string") {
         const p = parseFiller(s.filler.url);
         if (!p) { socket.emit("notice", "Il link della musica d'attesa non è un video o una playlist di YouTube."); }
