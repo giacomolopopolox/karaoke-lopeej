@@ -95,7 +95,7 @@ const app = express();
 app.set("trust proxy", true);
 
 // Pubblica solo i file dell'app (mai server.js, package.json, .env o i dati)
-const PAGES = new Set(["index.html", "regia.html", "schermo.html", "privacy.html", "style.css", "common.js", "logo.png", "dj-capitano.jpg", "dj-paillettes.jpg"]);
+const PAGES = new Set(["index.html", "regia.html", "schermo.html", "privacy.html", "style.css", "common.js", "logo.png", "dj-capitano.jpg", "dj-paillettes.jpg", "dj-faccia-1.jpg", "dj-faccia-2.jpg"]);
 const sendPage = (name) => (req, res) => res.sendFile(path.join(PUBLIC_DIR, name), { maxAge: /\.(png|jpg)$/.test(name) ? "1d" : 0 });
 app.get("/", sendPage("index.html"));
 app.get(["/regia", "/regia.html"], sendPage("regia.html"));

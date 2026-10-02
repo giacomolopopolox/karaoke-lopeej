@@ -30,7 +30,14 @@
   .hero.no-pic{grid-template-columns:minmax(0,1fr)}
   .pic{width:min(38vh,30vw);aspect-ratio:1;border-radius:8px;background:var(--surface-2) center/cover no-repeat;border:clamp(4px,.5vw,8px) solid var(--lime);
     display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:min(14vh,11vw);color:var(--lime);box-shadow:0 0 80px rgba(138,203,44,.25)}
-  .pic.dj{aspect-ratio:3/4;width:min(44vh,26vw);border-width:0;border-left:clamp(6px,.7vw,10px) solid var(--lime);box-shadow:none}
+  /* banner del DJ: solo i due ritagli del viso, compatto sotto il titolo */
+  .dj-banner{display:inline-flex;align-items:center;gap:clamp(14px,1.4vw,22px);margin-top:clamp(20px,4vh,44px);padding:clamp(8px,.8vw,12px) clamp(18px,1.8vw,28px) clamp(8px,.8vw,12px) clamp(8px,.8vw,12px);
+    background:rgba(23,27,17,.82);border-left:6px solid var(--lime);border-radius:6px}
+  .dj-banner .faces{display:flex;flex:none}
+  .dj-banner .face{width:clamp(60px,9vh,112px);aspect-ratio:1;border-radius:50%;background:var(--surface-2) center/cover no-repeat;border:3px solid var(--lime);box-shadow:0 0 0 4px rgba(11,14,8,.9)}
+  .dj-banner .face + .face{margin-left:calc(clamp(60px,9vh,112px) * -.28)}
+  .dj-banner .k{display:block;font-family:var(--f-display);font-weight:600;font-size:clamp(11px,1vw,16px);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(6px,.8vh,10px)}
+  .dj-banner .logo{display:block;height:clamp(22px,3.4vh,44px);width:auto}
   .kicker{display:flex;align-items:center;gap:14px;font-family:var(--f-display);font-weight:600;font-size:clamp(14px,1.6vw,24px);letter-spacing:.2em;text-transform:uppercase;color:var(--lime)}
   .kicker .bars{width:clamp(18px,1.8vw,28px);height:clamp(14px,1.4vw,22px);background:linear-gradient(var(--lime) 0 27%,transparent 27% 36.5%,var(--lime) 36.5% 63.5%,transparent 63.5% 73%,var(--lime) 73% 100%)}
   .who{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:clamp(44px,8.5vw,140px);line-height:.95;margin-top:clamp(8px,1.4vh,18px);text-wrap:balance;overflow-wrap:anywhere}
@@ -125,7 +132,7 @@
 (function () {
   const { $, esc, store, brandHTML, avatarHTML, initials } = K;
   let S = null, socket = null, yt = null, ready = false, loadedId = null, pending = null, ytState = "idle";
-  let celebrate = null, lastCalledId = null, djPhoto = 0;
+  let celebrate = null, lastCalledId = null;
   // musica d'attesa
   let bg = null, bgReady = false, bgKey = null, bgPlaying = false, bgFirst = true, bgManualPause = false, songStarted = false, fadeTimer = null, fading = false, bgVol = 0;
   $("#startBrand").innerHTML = brandHTML("Canta con Lopee J!");
@@ -313,16 +320,13 @@
       hero.className = "hero";
       hero.innerHTML = `${pic(cur)}<div>${kicker("Sul palco")}<div class="who">${esc(cur.singer)}</div><div class="what"><b>${esc(cur.title)}</b>${cur.artist ? " · " + esc(cur.artist) : ""}</div></div>`;
     } else {
-      hero.className = "hero";
-      const photo = djPhoto % 2 ? "/dj-paillettes.jpg" : "/dj-capitano.jpg";
-      hero.innerHTML = `<div class="pic dj" style="background-image:url('${photo}')" role="img" aria-label="Lopee J alla consolle"></div>
-        <div>${kicker(S.settings.open ? "Il palco è libero" : "Prenotazioni chiuse")}<div class="who">${S.settings.open ? "Chi canta?" : "Grazie a tutti!"}</div><div class="what">${S.settings.open ? "Inquadra il QR, scegli la canzone e fatti un selfie: <b>ti chiamiamo sul palco</b>." : "Alla prossima serata con <b>Lopee J</b>."}</div></div>`;
+      hero.className = "hero no-pic";
+      hero.innerHTML = `<div>${kicker(S.settings.open ? "Il palco è libero" : "Prenotazioni chiuse")}<div class="who">${S.settings.open ? "Chi canta?" : "Grazie a tutti!"}</div><div class="what">${S.settings.open ? "Inquadra il QR, scegli la canzone e fatti un selfie: <b>ti chiamiamo sul palco</b>." : "Alla prossima serata con <b>Lopee J</b>."}</div>
+        <div class="dj-banner"><div class="faces"><span class="face" style="background-image:url('/dj-faccia-1.jpg')" role="img" aria-label="Lopee J"></span><span class="face" style="background-image:url('/dj-faccia-2.jpg')" aria-hidden="true"></span></div><div><span class="k">Stasera alla consolle</span><img class="logo" src="/logo.png" alt="Lopee J"></div></div></div>`;
     }
     applyFiller();
     $("#nextBox").innerHTML = next.length ? `${kicker("Prossimi")}<ol class="upnext">${next.slice(0, 4).map((q, i) => `<li><span class="n">${i + 1}</span>${avatarHTML(q)}<div><b>${esc(q.singer)}</b> <span class="t">· ${esc(q.title)}</span></div></li>`).join("")}</ol>` : "";
   }
-  // a palco libero alterna le due foto di Lopee J
-  setInterval(() => { if (S && !S.current && !celebrate) { djPhoto++; render(); } }, 20000);
 
   $("#fsBtn").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch {} };
 })();
