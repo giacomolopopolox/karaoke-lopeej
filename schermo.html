@@ -35,6 +35,9 @@
     background:rgba(23,27,17,.82);border-left:6px solid var(--lime);border-radius:6px}
   .dj-banner .faces{display:flex;flex:none}
   .dj-banner .face{width:clamp(60px,9vh,112px);aspect-ratio:1;border-radius:50%;background:var(--surface-2) center/cover no-repeat;border:3px solid var(--lime);box-shadow:0 0 0 4px rgba(11,14,8,.9)}
+  /* la foto di Lopee J sta sopra il microfono */
+  .dj-banner .face{position:relative}
+  .dj-banner .face:first-child{z-index:2}
   .dj-banner .face.mic{display:grid;place-items:center;background:#11160c}
   .dj-banner .face.mic svg{width:68%;height:68%}
   .dj-banner .face + .face{margin-left:calc(clamp(60px,9vh,112px) * -.28)}
