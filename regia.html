@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Regia · Karaoke Night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px}
+  @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .col{display:flex;flex-direction:column;gap:20px;min-width:0}
+  .stage{position:relative;padding:20px;border-radius:14px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+  .stage::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 12% -25%,color-mix(in srgb,var(--bulb) 22%,transparent),transparent 60%);pointer-events:none}
+  .stage > *{position:relative}
+  .now-title{font-size:clamp(22px,3.2vw,30px);font-weight:700;line-height:1.15;margin-top:6px;text-wrap:balance}
+  .now-artist{color:var(--muted);font-size:16px}
+  .singer{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:6px 12px;border-radius:999px;background:var(--mag-soft);color:var(--mag);font-weight:700}
+  .transport{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
+  .progress{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--muted)}
+  .bar{flex:1;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--bulb);transition:width .9s linear}
+  .notice{padding:10px 14px;border-radius:var(--r);background:var(--bulb-soft);font-size:14px}
+
+  .queue > li.open{background:var(--surface-2)}
+  .queue > li.panel-li{display:block;background:var(--surface-2);border-top:0;padding:2px 14px 16px}
+  .row-actions{display:flex;gap:0;flex-wrap:wrap;justify-content:flex-end}
+  .next-up .pos{color:var(--bulb);font-weight:700}
+
+  .base{display:flex;flex-direction:column;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .panel-li .base{margin-top:6px;padding-top:0;border-top:0}
+  .cands{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto}
+  .cand{display:grid;grid-template-columns:112px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  .cand.used{border-color:var(--bulb);box-shadow:0 0 0 1px var(--bulb)}
+  .cand.failed{opacity:.5}
+  .thumb{width:112px;aspect-ratio:16/9;border-radius:5px;background:var(--surface-2) center/cover no-repeat;position:relative}
+  .thumb .dur{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.75);color:#fff;font-family:var(--f-mono);font-size:11px;padding:0 4px;border-radius:3px}
+  .cand .t{font-weight:600;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+  .cand .m{color:var(--muted);font-size:12px;margin-top:2px}
+  .cand .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+  .cand .side{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  @media (max-width:520px){.cand{grid-template-columns:84px minmax(0,1fr)}.thumb{width:84px}.cand .side{grid-column:1/-1;flex-direction:row;justify-content:flex-end}}
+  .inline-form{display:flex;gap:8px}
+  .inline-form input{flex:1;min-width:0}
+  .search-state{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .stat{background:var(--surface);padding:12px 14px}
+  .stat b{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:22px}
+  .stat span{font-size:12px;color:var(--muted)}
+  .qr{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;align-items:center}
+  .qr img{width:120px;height:120px;border-radius:8px;background:#fff;padding:4px}
+  .url{font-family:var(--f-mono);font-size:13px;overflow-wrap:anywhere}
+  .switch{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .toggle{position:relative;width:46px;height:26px;border-radius:999px;border:0;background:var(--line);cursor:pointer;flex:none}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+  .toggle[aria-checked="true"]{background:var(--ok)}
+  .toggle[aria-checked="true"]::after{transform:translateX(20px)}
+  details summary{cursor:pointer;font-weight:600}
+  .history > li{opacity:.75}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <form class="card" id="gateForm">
+    <div class="sign">Regia<small>Karaoke Night</small></div>
+    <div class="field"><label for="pin">PIN della regia</label><input type="password" id="pin" autocomplete="current-password" required></div>
+    <div class="err-text" id="gateErr"></div>
+    <button class="btn primary big" type="submit">Entra</button>
+  </form>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="sign"><span id="nightName">Karaoke Night</span><small>Regia · Lopee J</small></div>
+    <div class="row">
+      <span class="chip" id="ytChip"></span>
+      <span class="chip" id="screenChip"></span>
+      <a class="btn sm" href="/schermo" target="_blank" rel="noopener">Apri schermo ↗</a>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Collegamento…</span></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="notice" id="notice" hidden></div>
+      <section class="stage" id="stage"></section>
+
+      <section class="stack">
+        <div class="spread"><span class="label">In coda</span><span class="mono" style="font-size:13px;color:var(--muted)" id="eta"></span></div>
+        <div id="queueBox"></div>
+      </section>
+
+      <section class="stack">
+        <details><summary>Già cantate (<span id="histCount">0</span>)</summary><div id="histBox" style="margin-top:10px"></div></details>
+      </section>
+    </div>
+
+    <div class="col">
+      <div class="stats">
+        <div class="stat"><b id="sQueue">0</b><span>in coda</span></div>
+        <div class="stat"><b id="sDone">0</b><span>cantate</span></div>
+        <div class="stat"><b id="sSingers">0</b><span>cantanti</span></div>
+      </div>
+
+      <section class="card stack">
+        <span class="label">Prenotazioni dal telefono</span>
+        <div class="qr"><img src="/qr.svg" alt="QR code per prenotare"><div class="stack" style="gap:6px"><span style="font-size:14px">Gli ospiti inquadrano il QR o aprono:</span><span class="url" id="guestUrl"></span><button class="btn sm" id="copyUrl" type="button">Copia link</button></div></div>
+      </section>
+
+      <section class="card stack">
+        <span class="label">Aggiungi al volo</span>
+        <form id="quickForm" class="stack">
+          <div class="field"><label for="qSinger">Chi canta</label><input type="text" id="qSinger" maxlength="30" required></div>
+          <div class="two">
+            <div class="field"><label for="qTitle">Titolo</label><input type="text" id="qTitle" maxlength="80" required></div>
+            <div class="field"><label for="qArtist">Artista</label><input type="text" id="qArtist" maxlength="60"></div>
+          </div>
+          <button class="btn primary" type="submit">Metti in coda</button>
+        </form>
+      </section>
+
+      <section class="card stack">
+        <span class="label">Serata</span>
+        <div class="field"><label for="setName">Nome serata</label><input type="text" id="setName" maxlength="40"></div>
+        <div class="switch"><span><b>Prenotazioni aperte</b><br><span style="font-size:13px;color:var(--muted)">Se chiuse, gli ospiti vedono un avviso</span></span><button class="toggle" id="setOpen" role="switch" aria-checked="true" aria-label="Prenotazioni aperte" type="button"></button></div>
+        <div class="two">
+          <div class="field"><label for="setMax">Canzoni per persona</label><input type="number" id="setMax" min="1" max="10"></div>
+          <div class="field"><label for="setMin">Minuti a canzone</label><input type="number" id="setMin" min="2" max="10"></div>
+        </div>
+      </section>
+
+      <section class="card stack">
+        <span class="label">Fine serata</span>
+        <div id="resetArea"></div>
+        <button class="btn sm" id="logout" type="button" style="align-self:flex-start">Esci dalla regia</button>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/common.js"></script>
+<script>
+(function () {
+  const { $, esc, store, toast, fmtTime, setStatus } = K;
+  let S = null, socket = null, openId = null, confirmReset = false, player = { state: "idle", time: 0, duration: 0 };
+
+  // ---------- accesso ----------
+  function connect(pin) {
+    if (socket) socket.close();
+    socket = io({ auth: { role: "dj", pin } });
+    socket.on("connect", () => { store.set("karaoke-pin", pin); $("#gate").hidden = true; setStatus(true, "In diretta"); });
+    socket.on("connect_error", (e) => {
+      if (e.message === "pin") { store.del("karaoke-pin"); $("#gate").hidden = false; $("#gateErr").textContent = "PIN sbagliato."; socket.close(); }
+      else setStatus(false, "Server non raggiungibile");
+    });
+    socket.on("disconnect", () => setStatus(false, "Riconnessione…"));
+    socket.on("state", (s) => { S = s; player = s.player || player; render(); });
+    socket.on("player", (p) => { player = p; renderProgress(); });
+    socket.on("notice", (m) => showNotice(m));
+  }
+  $("#gateForm").addEventListener("submit", (e) => { e.preventDefault(); $("#gateErr").textContent = ""; connect($("#pin").value); });
+  const saved = store.get("karaoke-pin"); if (saved) connect(saved); else $("#pin").focus();
+  $("#logout").onclick = () => { store.del("karaoke-pin"); location.reload(); };
+
+  fetch("/api/info").then((r) => r.json()).then((i) => { $("#guestUrl").textContent = i.guestUrl; }).catch(() => {});
+  $("#copyUrl").onclick = async () => { try { await navigator.clipboard.writeText($("#guestUrl").textContent); toast("Link copiato"); } catch { toast("Copia non riuscita: seleziona il link a mano"); } };
+
+  function showNotice(m) { const n = $("#notice"); n.textContent = m; n.hidden = false; clearTimeout(showNotice._t); showNotice._t = setTimeout(() => (n.hidden = true), 8000); }
+  const emit = (ev, data, cb) => socket && socket.emit(ev, data, cb);
+
+  // ---------- dati derivati ----------
+  const byPos = (a, b) => (a.pos - b.pos) || (a.createdAt - b.createdAt);
+  const waiting = () => S.queue.filter((q) => q.status === "waiting").sort(byPos);
+  const current = () => S.queue.find((q) => q.status === "singing") || null;
+  const history = () => S.queue.filter((q) => q.status === "done" || q.status === "skipped").sort((a, b) => (b.endedAt || 0) - (a.endedAt || 0));
+  const norm = (s) => String(s || "").trim().toLowerCase();
+
+  function baseChip(q) {
+    const st = q.search?.state;
+    if (q.videoId) return '<span class="chip ok">base pronta</span>';
+    if (st === "searching") return '<span class="chip warn">cerco la base…</span>';
+    if (st === "error") return '<span class="chip err">da scegliere</span>';
+    return '<span class="chip">senza base</span>';
+  }
+
+  // ---------- pannello basi ----------
+  function basePanel(q) {
+    const st = q.search || {};
+    const cands = q.candidates || [];
+    const failed = q.failed || [];
+    const stateLine = st.state === "searching" ? '<span class="chip warn">Ricerca in corso…</span>'
+      : st.state === "error" ? `<span class="chip err">${esc(st.error)}</span>`
+      : st.state === "done" ? `<span>Risultati per <b>${esc(st.query)}</b> · ordinati dal più adatto al karaoke</span>`
+      : (S.youtube.enabled ? "<span>Nessuna ricerca ancora fatta.</span>" : "<span>Ricerca automatica spenta: incolla un link YouTube.</span>");
+    const defaultQuery = st.query || `${q.artist || ""} ${q.title} karaoke`.trim();
+    return `<div class="base">
+      <div class="search-state">${stateLine}</div>
+      ${cands.length ? `<ul class="cands">${cands.map((c) => `
+        <li class="cand${c.id === q.videoId ? " used" : ""}${failed.includes(c.id) ? " failed" : ""}">
+          <div class="thumb" style="background-image:url('${esc(c.thumb || `https://i.ytimg.com/vi/${c.id}/mqdefault.jpg`)}')">${c.duration ? `<span class="dur">${fmtTime(c.duration)}</span>` : ""}</div>
+          <div class="song"><div class="t">${esc(c.title)}</div><div class="m">${esc(c.channel || "")}</div>
+            <div class="tags">${(c.tags || []).map((t) => `<span class="chip">${esc(t)}</span>`).join("")}${c.manual ? '<span class="chip mag">scelta a mano</span>' : ""}${failed.includes(c.id) ? '<span class="chip err">non riproducibile</span>' : ""}</div></div>
+          <div class="side">${c.id === q.videoId ? '<span class="chip ok">in uso</span>' : `<button class="btn sm" data-act="use" data-id="${q.id}" data-v="${esc(c.id)}">Usa questa</button>`}
+            <a class="btn sm" href="https://www.youtube.com/watch?v=${esc(c.id)}" target="_blank" rel="noopener">Anteprima ↗</a></div>
+        </li>`).join("")}</ul>` : ""}
+      ${S.youtube.enabled ? `<form class="inline-form" data-form="search" data-id="${q.id}"><input type="text" id="sq-${q.id}" data-keep value="${esc(defaultQuery)}" aria-label="Ricerca personalizzata"><button class="btn sm" type="submit">Cerca altre versioni</button></form>` : ""}
+      <form class="inline-form" data-form="url" data-id="${q.id}"><input type="text" id="url-${q.id}" data-keep placeholder="Oppure incolla un link YouTube" aria-label="Link YouTube"><button class="btn sm" type="submit">Usa link</button></form>
+    </div>`;
+  }
+
+  // ---------- render ----------
+  function render() {
+    if (!S) return;
+    const keep = {}; document.querySelectorAll("[data-keep]").forEach((i) => { keep[i.id] = { v: i.value, dirty: i.dataset.dirty === "1" }; });
+    const focusId = document.activeElement?.id;
+
+    $("#nightName").textContent = S.settings.name;
+    $("#ytChip").className = "chip " + (S.youtube.enabled ? "ok" : "warn");
+    $("#ytChip").textContent = S.youtube.enabled ? `YouTube · ${S.youtube.searchesToday} ricerche oggi` : "Ricerca YouTube spenta";
+    $("#ytChip").title = S.youtube.enabled ? "La quota gratuita permette circa 100 ricerche al giorno; le ricerche ripetute usano la cache" : "Aggiungi YOUTUBE_API_KEY nel file .env";
+    $("#screenChip").className = "chip " + (S.screens ? "ok" : "err");
+    $("#screenChip").textContent = S.screens ? "Schermo collegato" : "Schermo non collegato";
+
+    const cur = current(), w = waiting(), h = history(), per = S.settings.minutesPerSong || 4;
+    const playing = player.state === "playing";
+    $("#stage").innerHTML = cur ? `
+      <span class="label">Sul palco</span>
+      <div class="now-title">${esc(cur.title)}</div>
+      <div class="now-artist">${esc(cur.artist || "Artista non indicato")}</div>
+      <div class="singer">🎤 ${esc(cur.singer)}</div>
+      <div class="transport">
+        <button class="btn primary" data-act="play" ${cur.videoId ? "" : "disabled"}>${playing ? "❚❚ Pausa" : "▶ Play"}</button>
+        <button class="btn" data-act="restart" ${cur.videoId ? "" : "disabled"} title="Ricomincia">⟲ Da capo</button>
+        <button class="btn" data-act="back" ${cur.videoId ? "" : "disabled"} title="Indietro 10 secondi">−10s</button>
+        <button class="btn" data-act="fwd" ${cur.videoId ? "" : "disabled"} title="Avanti 10 secondi">+10s</button>
+        <span style="flex:1"></span>
+        <button class="btn" data-act="next">${w.length ? "Avanti: " + esc(w[0].singer) : "Fine esibizione"}</button>
+        <button class="btn danger" data-act="skip">Salta</button>
+      </div>
+      <div class="progress"><span class="mono" id="pTime">0:00</span><div class="bar"><i id="pBar"></i></div><span class="mono" id="pDur">0:00</span></div>
+      ${basePanel(cur)}` : `
+      <span class="label">Palco libero</span>
+      <div class="now-title">${w.length ? "Pronto a partire" : "Nessuno in coda"}</div>
+      <div class="now-artist">${w.length ? `Prossimo: ${esc(w[0].singer)} con ${esc(w[0].title)}` : "Le prenotazioni dal telefono compaiono qui."}</div>
+      <div class="transport"><button class="btn primary" data-act="next" ${w.length ? "" : "disabled"}>Chiama sul palco</button></div>`;
+    renderProgress();
+
+    $("#eta").textContent = w.length ? `circa ${w.length * per} min di coda` : "";
+    $("#queueBox").innerHTML = w.length ? `<ol class="list queue">${w.map((q, i) => {
+      const over = w.filter((x) => norm(x.singer) === norm(q.singer)).length > S.settings.maxPerSinger;
+      const isOpen = openId === q.id;
+      return `<li class="${i === 0 ? "next-up" : ""}${isOpen ? " open" : ""}">
+        <span class="pos">${i + 1}</span>
+        <div class="song"><b>${esc(q.title)} ${baseChip(q)}${q.source === "guest" ? ' <span class="chip mag">dal telefono</span>' : ""}${over ? ' <span class="chip warn">oltre il limite</span>' : ""}</b>
+          <span>${esc(q.artist || "Artista non indicato")} · ${esc(q.singer)} · ~${(i + (cur ? 1 : 0)) * per} min</span></div>
+        <div class="row-actions">
+          <button class="icon-btn" title="Scegli la base" aria-label="Scegli la base" aria-expanded="${isOpen}" data-act="toggle" data-id="${q.id}">♫</button>
+          <button class="icon-btn" title="Sposta su" aria-label="Sposta su" data-act="up" data-id="${q.id}">↑</button>
+          <button class="icon-btn" title="Sposta giù" aria-label="Sposta giù" data-act="down" data-id="${q.id}">↓</button>
+          <button class="icon-btn" title="In cima alla coda" aria-label="In cima alla coda" data-act="top" data-id="${q.id}">⤒</button>
+          <button class="icon-btn" title="Canta adesso" aria-label="Canta adesso" data-act="now" data-id="${q.id}">▶</button>
+          <button class="icon-btn" title="Rimuovi" aria-label="Rimuovi" data-act="del" data-id="${q.id}">✕</button>
+        </div></li>${isOpen ? `<li class="panel-li">${basePanel(q)}</li>` : ""}`;
+    }).join("")}</ol>` : `<div class="empty"><strong>La coda è vuota</strong>Fai inquadrare il QR agli ospiti, oppure aggiungi un cantante dal riquadro qui accanto.</div>`;
+
+    $("#histCount").textContent = h.length;
+    $("#histBox").innerHTML = h.length ? `<ol class="list history">${h.map((q) => `<li><span class="pos">${q.status === "skipped" ? "–" : "✓"}</span><div class="song"><b>${esc(q.title)}</b><span>${esc(q.artist || "")} · ${esc(q.singer)}</span></div><button class="icon-btn" title="Rimetti in coda" aria-label="Rimetti in coda" data-act="requeue" data-id="${q.id}">↺</button></li>`).join("")}</ol>` : `<div class="empty">Ancora nessuna esibizione.</div>`;
+
+    $("#sQueue").textContent = w.length;
+    $("#sDone").textContent = S.queue.filter((q) => q.status === "done").length;
+    $("#sSingers").textContent = new Set(S.queue.map((q) => norm(q.singer))).size;
+
+    sync("#setName", S.settings.name); sync("#setMax", S.settings.maxPerSinger); sync("#setMin", S.settings.minutesPerSong);
+    $("#setOpen").setAttribute("aria-checked", String(!!S.settings.open));
+    $("#resetArea").innerHTML = confirmReset
+      ? `<div class="row"><span style="font-size:14px">Cancello coda e storico della serata?</span><button class="btn danger sm" data-act="resetyes">Sì, svuota</button><button class="btn sm" data-act="resetno">Annulla</button></div>`
+      : `<button class="btn danger" data-act="reset">Svuota coda e storico</button>`;
+
+    Object.entries(keep).forEach(([id, k]) => { const el = document.getElementById(id); if (el && k.dirty) { el.value = k.v; el.dataset.dirty = "1"; } });
+    if (focusId) { const el = document.getElementById(focusId); if (el && el !== document.activeElement) { el.focus(); if (el.type === "text") { const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } }
+  }
+  function sync(sel, v) { const el = $(sel); if (document.activeElement !== el) el.value = v ?? ""; }
+  function renderProgress() {
+    const t = $("#pTime"); if (!t) return;
+    t.textContent = fmtTime(player.time); $("#pDur").textContent = fmtTime(player.duration);
+    $("#pBar").style.width = player.duration ? Math.min(100, (player.time / player.duration) * 100) + "%" : "0";
+    const b = document.querySelector('[data-act="play"]');
+    const cur = S && current();
+    if (b && cur && cur.videoId) b.textContent = player.state === "playing" ? "❚❚ Pausa" : "▶ Play";
+  }
+
+  // ---------- eventi ----------
+  document.addEventListener("input", (e) => { if (e.target.matches("[data-keep]")) e.target.dataset.dirty = "1"; });
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-act]"); if (!t) return;
+    const a = t.dataset.act, id = t.dataset.id;
+    switch (a) {
+      case "play": return emit("dj:player", { cmd: player.state === "playing" ? "pause" : "play" });
+      case "restart": return emit("dj:player", { cmd: "restart" });
+      case "back": return emit("dj:player", { cmd: "seek", value: -10 });
+      case "fwd": return emit("dj:player", { cmd: "seek", value: 10 });
+      case "next": return emit("dj:next");
+      case "skip": return emit("dj:skip");
+      case "toggle": openId = openId === id ? null : id; return render();
+      case "up": return emit("dj:move", { id, dir: -1 });
+      case "down": return emit("dj:move", { id, dir: 1 });
+      case "top": return emit("dj:top", id);
+      case "now": return emit("dj:singNow", id);
+      case "del": return emit("dj:remove", id);
+      case "requeue": return emit("dj:requeue", id);
+      case "use": emit("dj:setVideo", { id, videoId: t.dataset.v }); return toast("Base cambiata");
+      case "reset": confirmReset = true; return render();
+      case "resetno": confirmReset = false; return render();
+      case "resetyes": confirmReset = false; emit("dj:reset"); return toast("Serata svuotata");
+    }
+  });
+  document.addEventListener("submit", (e) => {
+    const f = e.target.closest("[data-form]"); if (!f) return;
+    e.preventDefault();
+    const id = f.dataset.id, input = f.querySelector("input");
+    if (f.dataset.form === "search") { emit("dj:search", { id, query: input.value }); input.dataset.dirty = ""; return; }
+    if (f.dataset.form === "url") {
+      const v = input.value.trim(); if (!v) return;
+      emit("dj:addUrl", { id, url: v }, (r) => { if (r?.error) toast(r.error); else { toast("Base impostata"); const el = document.getElementById("url-" + id); if (el) { el.value = ""; el.dataset.dirty = ""; } } });
+    }
+  });
+  $("#quickForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const singer = $("#qSinger").value.trim(), title = $("#qTitle").value.trim();
+    if (!singer || !title) return;
+    emit("dj:add", { singer, title, artist: $("#qArtist").value.trim() });
+    toast(`${singer} è in coda`);
+    $("#qSinger").value = ""; $("#qTitle").value = ""; $("#qArtist").value = ""; $("#qSinger").focus();
+  });
+  $("#setOpen").onclick = () => emit("dj:settings", { open: !S.settings.open });
+  $("#setName").onchange = (e) => emit("dj:settings", { name: e.target.value });
+  $("#setMax").onchange = (e) => emit("dj:settings", { maxPerSinger: e.target.value });
+  $("#setMin").onchange = (e) => emit("dj:settings", { minutesPerSong: e.target.value });
+
+  // scorciatoie: spazio = play/pausa, N = avanti (fuori dai campi di testo)
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input,textarea") || !S) return;
+    if (e.code === "Space" && current()?.videoId) { e.preventDefault(); emit("dj:player", { cmd: player.state === "playing" ? "pause" : "play" }); }
+    if (e.key === "n" || e.key === "N") emit("dj:next");
+  });
+})();
+</script>
+</body>
+</html>

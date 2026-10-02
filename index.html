@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Prenota la tua canzone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .now{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:var(--r);background:var(--mag-soft);color:var(--fg)}
+  .now .mic{font-size:22px}
+  .now b{color:var(--mag)}
+  .done-card{text-align:center;padding:28px 18px}
+  .done-card .big{font-family:var(--f-display);font-size:64px;line-height:1;color:var(--bulb)}
+  .mine li{grid-template-columns:44px minmax(0,1fr) auto}
+  .mine .pos{font-size:20px;color:var(--bulb);font-weight:700}
+  .closed{text-align:center;padding:36px 18px}
+  .closed h2{font-family:var(--f-display);font-weight:400;color:var(--bulb);margin-bottom:6px}
+  .lead{margin:0;color:var(--muted)}
+  h1.title{font-family:var(--f-display);font-weight:400;font-size:clamp(24px,7vw,32px);line-height:1.1;margin:0;color:var(--bulb);text-wrap:balance}
+</style>
+</head>
+<body>
+<div class="wrap narrow stack" style="gap:20px">
+  <header class="top">
+    <div class="sign"><span id="nightName">Karaoke Night</span><small>con Lopee J</small></div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Collegamento…</span></div>
+  </header>
+
+  <div class="now" id="nowBox" hidden></div>
+
+  <section id="formBox" class="stack" style="gap:16px">
+    <div class="stack" style="gap:4px">
+      <h1 class="title">Scegli la tua canzone</h1>
+      <p class="lead">Scrivi titolo e artista: la base karaoke la trova il DJ.</p>
+    </div>
+    <form id="form" class="card stack" novalidate>
+      <div class="field"><label for="singer">Il tuo nome</label><input type="text" id="singer" maxlength="30" autocomplete="nickname" placeholder="Come ti chiamiamo sul palco" required></div>
+      <div class="field"><label for="title">Titolo della canzone</label><input type="text" id="title" maxlength="80" autocomplete="off" placeholder="Es. Albachiara" required></div>
+      <div class="field"><label for="artist">Artista</label><input type="text" id="artist" maxlength="60" autocomplete="off" placeholder="Es. Vasco Rossi"></div>
+      <div class="err-text" id="err" role="alert"></div>
+      <button class="btn primary big" type="submit" id="submit">Mettimi in coda</button>
+    </form>
+  </section>
+
+  <section id="doneBox" class="card done-card" hidden></section>
+
+  <section id="closedBox" class="card closed" hidden>
+    <h2>Prenotazioni chiuse</h2>
+    <p class="lead">Chiedi direttamente al DJ se c'è ancora posto.</p>
+  </section>
+
+  <section id="mineBox" class="stack" hidden>
+    <span class="label">Le tue prenotazioni</span>
+    <ul class="list mine" id="mineList"></ul>
+  </section>
+
+  <section class="stack">
+    <div class="spread"><span class="label">In coda</span><span class="mono" style="font-size:13px;color:var(--muted)" id="count"></span></div>
+    <div id="queueBox"></div>
+  </section>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/common.js"></script>
+<script>
+(function () {
+  const { $, esc, store, toast, setStatus } = K;
+  let clientId = store.get("karaoke-client");
+  if (!clientId) { clientId = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set("karaoke-client", clientId); }
+  $("#singer").value = store.get("karaoke-name", "");
+
+  let S = null, showDone = null;
+  const socket = io({ auth: { role: "guest", clientId } });
+  socket.on("connect", () => setStatus(true, "In diretta"));
+  socket.on("disconnect", () => setStatus(false, "Riconnessione…"));
+  socket.on("state", (s) => { S = s; render(); });
+
+  function render() {
+    if (!S) return;
+    $("#nightName").textContent = S.settings.name;
+    document.title = `Prenota · ${S.settings.name}`;
+    const cur = S.current;
+    $("#nowBox").hidden = !cur;
+    if (cur) $("#nowBox").innerHTML = `<span class="mic">🎤</span><div class="song"><span>Sul palco ora</span><div><b>${esc(cur.singer)}</b> · ${esc(cur.title)}</div></div>`;
+
+    const per = S.settings.minutesPerSong || 4;
+    const open = S.settings.open;
+    $("#closedBox").hidden = open || !!showDone;
+    $("#formBox").hidden = !open || !!showDone;
+    $("#doneBox").hidden = !showDone;
+    if (showDone) {
+      const pos = S.queue.findIndex((q) => q.id === showDone.id);
+      const n = pos < 0 ? showDone.position : pos + 1;
+      $("#doneBox").innerHTML = `<span class="label">Sei in coda</span><div class="big">${n}°</div>
+        <p style="margin:10px 0 0">Ti chiameremo per <b>${esc(showDone.title)}</b>.<br><span style="color:var(--muted)">Attesa stimata: circa ${(n - 1 + (cur ? 1 : 0)) * per} minuti.</span></p>
+        <button class="btn" style="margin-top:18px" id="again">Prenota un'altra canzone</button>`;
+      $("#again").onclick = () => { showDone = null; render(); };
+    }
+
+    const mine = S.queue.map((q, i) => ({ ...q, n: i + 1 })).filter((q) => q.mine);
+    $("#mineBox").hidden = !mine.length;
+    $("#mineList").innerHTML = mine.map((q) => `<li><span class="pos">${q.n}°</span><div class="song"><b>${esc(q.title)}</b><span>${esc(q.artist || "")}${q.artist ? " · " : ""}circa ${(q.n - 1 + (cur ? 1 : 0)) * per} min</span></div><button class="btn sm danger" data-cancel="${q.id}">Annulla</button></li>`).join("");
+
+    $("#count").textContent = S.queue.length ? `${S.queue.length} in attesa` : "";
+    $("#queueBox").innerHTML = S.queue.length
+      ? `<ol class="list">${S.queue.slice(0, 15).map((q, i) => `<li style="grid-template-columns:34px minmax(0,1fr)"><span class="pos">${i + 1}</span><div class="song"><b>${esc(q.singer)}${q.mine ? ' <span class="chip mag">tu</span>' : ""}</b><span>${esc(q.title)}${q.artist ? " · " + esc(q.artist) : ""}</span></div></li>`).join("")}</ol>${S.queue.length > 15 ? `<p class="lead" style="font-size:13px;margin-top:8px">e altri ${S.queue.length - 15}…</p>` : ""}`
+      : `<div class="empty"><strong>Nessuno in coda</strong>Prenota per primo: sali subito sul palco.</div>`;
+  }
+
+  document.addEventListener("click", (e) => {
+    const id = e.target.closest("[data-cancel]")?.dataset.cancel;
+    if (!id) return;
+    socket.emit("guest:cancel", id, (r) => toast(r?.ok ? "Prenotazione annullata" : r?.error || "Non riuscito"));
+  });
+
+  $("#form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const singer = $("#singer").value.trim(), title = $("#title").value.trim(), artist = $("#artist").value.trim();
+    const err = $("#err"); err.textContent = "";
+    if (!singer) { err.textContent = "Scrivi il tuo nome."; $("#singer").focus(); return; }
+    if (!title) { err.textContent = "Scrivi il titolo della canzone."; $("#title").focus(); return; }
+    if (!socket.connected) { err.textContent = "Connessione assente: controlla la rete e riprova."; return; }
+    store.set("karaoke-name", singer);
+    $("#submit").disabled = true;
+    socket.timeout(8000).emit("guest:request", { singer, title, artist }, (to, r) => {
+      $("#submit").disabled = false;
+      if (to) { err.textContent = "Il server non risponde: riprova tra un attimo."; return; }
+      if (r?.error) { err.textContent = r.error; return; }
+      $("#title").value = ""; $("#artist").value = "";
+      showDone = { id: r.id, title, position: r.position };
+      render(); window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+})();
+</script>
+</body>
+</html>
