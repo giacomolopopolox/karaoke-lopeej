@@ -59,9 +59,23 @@
   .calling .hero > *:nth-child(2){animation-delay:.82s}
   @keyframes reveal{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
 
-  .badge{position:absolute;top:clamp(12px,2vw,28px);left:clamp(12px,2vw,28px);display:flex;gap:12px;align-items:center;padding:8px 18px 8px 8px;border-radius:4px;background:rgba(11,14,8,.86);border-left:5px solid var(--lime);font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:clamp(16px,1.8vw,26px);transition:opacity .6s;pointer-events:none}
-  .badge .avatar{width:2.2em;height:2.2em;font-size:.6em}
-  .badge.hide{opacity:0}
+  /* sovraimpressioni durante la canzone: negli angoli in alto, lontano dal testo del karaoke */
+  .live{position:absolute;top:clamp(12px,2vw,28px);z-index:4;display:flex;align-items:center;gap:clamp(10px,1vw,16px);
+    background:rgba(11,14,8,.84);border-radius:6px;padding:clamp(8px,.8vw,12px);transition:opacity .6s,transform .6s;pointer-events:none;
+    box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .live.hide{opacity:0;transform:translateY(-12px)}
+  .live-singer{left:clamp(12px,2vw,28px);border-left:5px solid var(--lime);max-width:min(46vw,620px);padding-right:clamp(14px,1.4vw,22px)}
+  .live-singer .avatar{width:clamp(56px,7vh,96px);height:clamp(56px,7vh,96px);font-size:clamp(20px,2.6vh,34px);border:3px solid var(--lime);border-radius:5px;flex:none}
+  .live-singer .txt{min-width:0}
+  .live-singer .k{font-family:var(--f-display);font-weight:600;font-size:clamp(11px,1vw,15px);letter-spacing:.18em;text-transform:uppercase;color:var(--lime);display:flex;align-items:center;gap:8px}
+  .live-singer .k::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 0 3px rgba(255,90,110,.25)}
+  .live-singer .n{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:clamp(20px,2.4vw,40px);line-height:1.05;overflow-wrap:anywhere}
+  .live-singer .s{color:var(--muted);font-size:clamp(13px,1.2vw,19px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .live-singer .s b{color:var(--fg);font-weight:600}
+  .live-qr{right:clamp(12px,2vw,28px);border-right:5px solid var(--lime);flex-direction:row-reverse;padding-left:clamp(12px,1.2vw,18px)}
+  .live-qr img{width:clamp(84px,11vh,140px);height:auto;background:#fff;border-radius:3px;padding:4px;flex:none}
+  .live-qr b{display:block;font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:clamp(13px,1.2vw,19px);line-height:1.15;text-align:right}
+  .live-qr span{display:block;color:var(--lime);font-family:var(--f-display);font-weight:600;font-size:clamp(11px,1vw,15px);letter-spacing:.14em;text-transform:uppercase;text-align:right;margin-top:4px}
   .tools{position:absolute;right:16px;bottom:16px;display:flex;gap:8px;opacity:0;transition:opacity .3s;z-index:6}
   #stage:hover .tools{opacity:1}
   .start{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:30;padding:16px}
@@ -91,7 +105,8 @@
 <div id="stage">
   <div id="bgwrap"><div id="bgplayer"></div></div>
   <div id="player"></div>
-  <div class="badge hide" id="badge"></div>
+  <div class="live live-singer hide" id="liveSinger" aria-live="polite"></div>
+  <div class="live live-qr hide" id="liveQr"><img src="/qr.svg" alt="QR code per prenotare"><div><b>Vuoi cantare?</b><b>Inquadra e prenota</b><span id="liveQrSub">Canta con Lopee J!</span></div></div>
   <div class="overlay" id="overlay">
     <div class="brand" id="nightName"></div>
     <div class="hero" id="hero"></div>
@@ -110,7 +125,7 @@
 (function () {
   const { $, esc, store, brandHTML, avatarHTML, initials } = K;
   let S = null, socket = null, yt = null, ready = false, loadedId = null, pending = null, ytState = "idle";
-  let celebrate = null, badgeTimer = null, lastCalledId = null, djPhoto = 0;
+  let celebrate = null, lastCalledId = null, djPhoto = 0;
   // musica d'attesa
   let bg = null, bgReady = false, bgKey = null, bgPlaying = false, bgFirst = true, bgManualPause = false, songStarted = false, fadeTimer = null, fading = false, bgVol = 0;
   $("#startBrand").innerHTML = brandHTML("Canta con Lopee J!");
@@ -147,7 +162,7 @@
           ytState = map[e.data] || "idle";
           if (ytState === "playing") songStarted = true;
           if (ytState === "ended" && S?.current) celebrate = { ...S.current };
-          if (ytState === "playing") { celebrate = null; showBadge(); }
+          if (ytState === "playing") celebrate = null;
           render(); report();
         },
         onError: (e) => { socket.emit("screen:error", { videoId: loadedId, code: e.data }); }
@@ -253,11 +268,17 @@
     let title = ""; try { title = bgPlaying ? (bg.getVideoData?.().title || "") : ""; } catch {}
     socket.emit("screen:status", { videoId: loadedId, state: loadedId ? ytState : "idle", time: yt.getCurrentTime?.() || 0, duration: yt.getDuration?.() || 0, filler: { playing: bgPlaying, title, paused: bgManualPause } });
   }
-  function showBadge() {
-    const cur = S?.current; if (!cur) return;
-    const b = $("#badge"); b.innerHTML = `${avatarHTML(cur)}<span>${esc(cur.singer)}</span>`; b.classList.remove("hide");
-    clearTimeout(badgeTimer); badgeTimer = setTimeout(() => b.classList.add("hide"), 9000);
+  // foto e nome di chi canta + QR, sempre visibili mentre va la canzone
+  function renderLive(on) {
+    const cur = S && S.current, next = (S && S.next) || [];
+    const box = $("#liveSinger");
+    if (on && cur) {
+      box.innerHTML = `${avatarHTML(cur)}<div class="txt"><div class="k">Sta cantando</div><div class="n">${esc(cur.singer)}</div><div class="s"><b>${esc(cur.title)}</b>${cur.artist ? " · " + esc(cur.artist) : ""}</div>${next[0] ? `<div class="s">Dopo: <b>${esc(next[0].singer)}</b></div>` : ""}</div>`;
+    }
+    box.classList.toggle("hide", !(on && cur));
+    $("#liveQr").classList.toggle("hide", !on);
   }
+
 
   // ---------- grafica ----------
   const kicker = (t) => `<div class="kicker"><span class="bars"></span>${esc(t)}</div>`;
@@ -268,10 +289,12 @@
   function render() {
     if (!S) return;
     $("#nightName").innerHTML = brandHTML(S.settings.name);
+    $("#liveQrSub").textContent = S.settings.name;
     const cur = S.current, next = S.next || [];
     const playing = ytState === "playing" || ytState === "buffering";
     const ov = $("#overlay");
     ov.classList.toggle("hide", playing && !!cur);
+    renderLive(playing && !!cur && S.settings.liveOverlay !== false);
     showFillerVideo();
 
     // nuovo cantante chiamato sul palco: parte l'animazione

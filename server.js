@@ -28,7 +28,7 @@ const SELFIE_TOKEN = crypto.randomBytes(16).toString("hex");
 
 // ---------- stato della serata ----------
 const DEFAULT_FILLER = { url: "", videoId: null, listId: null, enabled: true, volume: 60, visibility: 45 };
-const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, filler: { ...DEFAULT_FILLER } };
+const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, filler: { ...DEFAULT_FILLER } };
 
 // Musica d'attesa: accetta il link di un video o di una playlist YouTube
 function parseFiller(raw) {
@@ -188,7 +188,7 @@ function screenView() {
   const cur = current(), show = state.settings.showSelfies;
   const withPic = (q) => ({ ...publicItem(q), selfie: show ? selfieUrl(q) : null });
   return {
-    settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler },
+    settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler, liveOverlay: state.settings.liveOverlay },
     current: cur ? { ...withPic(cur), videoId: cur.videoId || null, startedAt: cur.startedAt || 0 } : null,
     next: waiting().slice(0, 5).map(withPic)
   };
@@ -368,6 +368,7 @@ io.on("connection", (socket) => {
     if (typeof s?.name === "string") st.name = clean(s.name, 40) || DEFAULT_SETTINGS.name;
     if (typeof s?.open === "boolean") st.open = s.open;
     if (typeof s?.showSelfies === "boolean") st.showSelfies = s.showSelfies;
+    if (typeof s?.liveOverlay === "boolean") st.liveOverlay = s.liveOverlay;
     if (s?.filler) {
       const f = st.filler;
       if (typeof s.filler.enabled === "boolean") f.enabled = s.filler.enabled;

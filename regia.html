@@ -143,6 +143,7 @@
           <div class="field"><label for="setMin">Minuti a canzone</label><input type="number" id="setMin" min="2" max="10"></div>
         </div>
         <div class="switch"><span><b>Selfie sullo schermo</b><br><span style="font-size:13px;color:var(--muted)">Se spento, sullo schermo compaiono solo le iniziali</span></span><button class="toggle" id="setSelfies" role="switch" aria-checked="true" aria-label="Selfie sullo schermo" type="button"></button></div>
+        <div class="switch"><span><b>Sovraimpressioni durante la canzone</b><br><span style="font-size:13px;color:var(--muted)">Foto e nome di chi canta in alto a sinistra, QR in alto a destra. Spegnile se coprono il testo di un video</span></span><button class="toggle" id="setLive" role="switch" aria-checked="true" aria-label="Sovraimpressioni durante la canzone" type="button"></button></div>
       </section>
 
       <section class="card stack">
@@ -308,6 +309,7 @@
     sync("#setName", S.settings.name); sync("#setMax", S.settings.maxPerSinger); sync("#setMin", S.settings.minutesPerSong);
     $("#setOpen").setAttribute("aria-checked", String(!!S.settings.open));
     $("#setSelfies").setAttribute("aria-checked", String(S.settings.showSelfies !== false));
+    $("#setLive").setAttribute("aria-checked", String(S.settings.liveOverlay !== false));
     const fl = S.settings.filler || {};
     $("#fillerOn").setAttribute("aria-checked", String(fl.enabled !== false));
     sync("#fillerUrl", fl.url); sync("#fillerVol", fl.volume ?? 60); $("#fillerVolTxt").textContent = (fl.volume ?? 60) + "%";
@@ -395,6 +397,7 @@
   $("#fillerVis").onchange = (e) => emit("dj:settings", { filler: { visibility: e.target.value } });
   $("#fillerSkip").onclick = () => emit("dj:filler", { cmd: "skip" });
   $("#fillerPause").onclick = () => emit("dj:filler", { cmd: (player.filler || {}).paused ? "resume" : "pause" });
+  $("#setLive").onclick = () => emit("dj:settings", { liveOverlay: S.settings.liveOverlay === false });
   $("#setSelfies").onclick = () => emit("dj:settings", { showSelfies: S.settings.showSelfies === false });
   $("#setName").onchange = (e) => emit("dj:settings", { name: e.target.value });
   $("#setMax").onchange = (e) => emit("dj:settings", { maxPerSinger: e.target.value });
