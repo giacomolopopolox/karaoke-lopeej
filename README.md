@@ -39,6 +39,8 @@ Web app per le serate karaoke di Lopee J.
 
 **Voto del pubblico.** In regia accendi **Voto aperto**. Quando premi Play, sul telefono degli ospiti compaiono 5 pulsanti con gli applausi (1 Delusione, 2 Zero entusiasmo, 3 Bene!, 4 Spettacolo!, 5 Standing ovation!). Ogni telefono vota una volta per esibizione e può cambiare voto finché si canta; chi canta non può votarsi. Sullo schermo si vede quanti voti sono arrivati, ma non la media. A fine canzone (o quando premi **Avanti**, oppure **Chiudi voto e mostra esito**) parte il pop-up con l'esito medio, grafica e suono diversi per ogni livello. In regia vedi la classifica, puoi proiettarla con **Classifica sullo schermo** e alla fine premere **Proclama il vincitore**. Per entrare in classifica servono almeno i voti minimi impostati (di base 3). Una canzone saltata con **Salta** non viene votata.
 
+**Banner dello schermo.** Nel riquadro **Banner dello schermo** della regia cambi il testo sopra il logo (di base «Stasera alla console») e scegli fino a 6 cerchi: le due foto di Lopee J, il microfono e le foto dei festeggiati che carichi (ritagliate a cerchio trascinando e zoomando). Il primo cerchio sta davanti; con le frecce cambi l'ordine. Il logo Lopee J resta sempre in fondo. Le foto valgono solo per la festa in corso: **Fine serata: svuota tutto** le cancella e riporta il banner a quello predefinito (Lopee J con il cappello rosso + microfono + «Stasera alla console»). Anche se ti dimentichi di premerlo, alla festa successiva riparti comunque dal banner predefinito.
+
 ## Avvio sul tuo computer (facoltativo)
 
 ```

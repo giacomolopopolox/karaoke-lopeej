@@ -49,5 +49,8 @@ window.K = (function () {
       img.src = url;
     });
   }
-  return { $, esc, store, toast, fmtTime, setStatus, brandHTML, initials, avatarHTML, compressImage };
+  // microfono a condensatore retrò, disegnato in verde lime
+  let micN = 0;
+  function micSVG() { const id = "micG" + (++micN); return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${id}"><path d="M39 40V21a11 11 0 0 1 22 0v19z"/></clipPath></defs><g fill="none" stroke="#8acb2c" stroke-linecap="round" stroke-linejoin="round"><path d="M29 57a21 6.5 0 0 1 42 0" stroke-width="2.6" opacity=".55"/><path d="M50 63.5V84M38 87h24" stroke-width="3.4"/><path d="M39 40V21a11 11 0 0 1 22 0v19z" fill="#141b0d" stroke-width="3"/><g clip-path="url(#${id})" stroke-width="1.6" opacity=".9"><path d="M30 14l30 30M30 22l30 30M30 30l30 30M30 6l30 30M38 2l30 30M70 14L40 44M70 22L40 52M70 6L40 36M62 2L32 32"/></g><path d="M39 44v20a4 4 0 0 0 4 4h14a4 4 0 0 0 4-4V44z" fill="#141b0d" stroke-width="3"/><path d="M45 68v4h10v-4" stroke-width="2.6"/><path d="M29 57a21 6.5 0 0 0 42 0" stroke-width="3"/><path d="M29.5 57l9.5-3M70.5 57l-9.5-3" stroke-width="1.6" opacity=".8"/></g><rect x="37.5" y="39" width="25" height="5.5" rx="1.5" fill="#8acb2c"/><circle cx="50" cy="51" r="2.4" fill="#8acb2c"/></svg>`; }
+  return { $, esc, store, toast, fmtTime, setStatus, brandHTML, initials, avatarHTML, compressImage, micSVG };
 })();

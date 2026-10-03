@@ -29,7 +29,15 @@ const SELFIE_TOKEN = crypto.randomBytes(16).toString("hex");
 // ---------- stato della serata ----------
 // musica d'attesa predefinita: si può sempre cambiare dalla regia
 const DEFAULT_FILLER = { url: "https://youtu.be/WDswiT87oo8", videoId: "WDswiT87oo8", listId: null, enabled: true, volume: 60, visibility: 45 };
-const DEFAULT_SETTINGS = { name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
+// banner dello schermo: cerchi (foto o microfono) + testo, seguiti sempre dal logo
+const DEFAULT_BANNER = { text: "Stasera alla console", circles: ["dj", "mic"], updatedAt: 0 };
+const MAX_CIRCLES = 6, MAX_GALLERY = 24;
+const BUILTIN = {
+  dj: { type: "img", url: "/dj-faccia-2.jpg", label: "Lopee J" },
+  dj2: { type: "img", url: "/dj-faccia-1.jpg", label: "Lopee J" },
+  mic: { type: "mic", label: "Microfono" }
+};
+const DEFAULT_SETTINGS = { banner: { ...DEFAULT_BANNER }, name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
 
 // Musica d'attesa: accetta il link di un video o di una playlist YouTube
 function parseFiller(raw) {
@@ -42,14 +50,15 @@ function parseFiller(raw) {
   if (!videoId && !listId) return null;
   return { url, videoId, listId };
 }
-let state = { settings: { ...DEFAULT_SETTINGS }, queue: [] };
+let state = { settings: { ...DEFAULT_SETTINGS }, queue: [], gallery: [] };
 try {
   const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-  state = { settings: { ...DEFAULT_SETTINGS, ...saved.settings, filler: { ...DEFAULT_FILLER, ...(saved.settings?.filler || {}) } }, queue: saved.queue || [] };
+  state = { settings: { ...DEFAULT_SETTINGS, ...saved.settings, filler: { ...DEFAULT_FILLER, ...(saved.settings?.filler || {}) }, banner: { ...DEFAULT_BANNER, ...(saved.settings?.banner || {}) } }, queue: saved.queue || [], gallery: saved.gallery || [] };
   if (state.settings.name === "Karaoke Night") state.settings.name = DEFAULT_SETTINGS.name;
   state.queue.forEach((q) => { if (q.search?.state === "searching") q.search = { state: "idle" }; });
 } catch {}
 
+state.gallery = (state.gallery || []).filter((g) => fs.existsSync(path.join(DATA_DIR, "banner", g.id + ".jpg")));
 let player = { videoId: null, state: "idle", time: 0, duration: 0, filler: { playing: false, title: "" } };
 let quota = { day: today(), searches: 0 };
 function today() { return new Date().toISOString().slice(0, 10); }
@@ -136,6 +145,13 @@ app.get("/", sendPage("index.html"));
 app.get(["/regia", "/regia.html"], sendPage("regia.html"));
 app.get(["/schermo", "/schermo.html"], sendPage("schermo.html"));
 app.get(["/privacy", "/privacy.html"], sendPage("privacy.html"));
+const BANNER_DIR = path.join(DATA_DIR, "banner");
+const bannerPath = (id) => path.join(BANNER_DIR, String(id).replace(/[^a-f0-9]/g, "") + ".jpg");
+app.get("/banner/:id.jpg", (req, res) => {
+  const p = bannerPath(req.params.id);
+  if (!/^[a-f0-9]{12}$/.test(req.params.id) || !fs.existsSync(p)) return res.sendStatus(404);
+  res.set("Cache-Control", "public, max-age=86400").type("image/jpeg").sendFile(p);
+});
 app.get("/selfie/:id", (req, res) => {
   if (req.query.t !== SELFIE_TOKEN) return res.sendStatus(404);
   const p = selfiePath(req.params.id);
@@ -221,7 +237,21 @@ function djView() {
     ranking: ranking(10),
     player,
     screens: io.sockets.adapter.rooms.get("screen")?.size || 0,
-    youtube: { enabled: !!YT_KEY, searchesToday: quota.day === today() ? quota.searches : 0 }
+    youtube: { enabled: !!YT_KEY, searchesToday: quota.day === today() ? quota.searches : 0 },
+    gallery: state.gallery.map((g) => ({ id: g.id, name: g.name, url: `/banner/${g.id}.jpg` })),
+    maxCircles: MAX_CIRCLES, maxGallery: MAX_GALLERY
+  };
+}
+function clearGallery() {
+  state.gallery = [];
+  try { fs.rmSync(BANNER_DIR, { recursive: true, force: true }); } catch {}
+}
+function bannerView() {
+  const b = state.settings.banner || DEFAULT_BANNER;
+  const names = new Map(state.gallery.map((g) => [g.id, g.name]));
+  return {
+    text: b.text || DEFAULT_BANNER.text,
+    circles: (b.circles || []).map((c) => BUILTIN[c] || (names.has(c) ? { type: "img", url: `/banner/${c}.jpg`, label: names.get(c) || "" } : null)).filter(Boolean)
   };
 }
 function screenView() {
@@ -231,6 +261,7 @@ function screenView() {
     settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler, liveOverlay: state.settings.liveOverlay, voting: state.settings.voting, showRanking: state.settings.showRanking },
     current: cur ? { ...withPic(cur), videoId: cur.videoId || null, startedAt: cur.startedAt || 0, voteOpen: voteOpen(cur), votes: voteCount(cur) } : null,
     ranking: state.settings.showRanking ? ranking(5) : [],
+    banner: bannerView(),
     next: waiting().slice(0, 5).map(withPic)
   };
 }
@@ -399,6 +430,40 @@ io.on("connection", (socket) => {
     broadcast(); if (wasCurrent) cueCurrent();
   });
   socket.on("dj:hideSelfie", (id) => { deleteSelfie(find(id)); broadcast(); });
+
+  // ----- banner dello schermo -----
+  socket.on("dj:galleryAdd", (p, ack = () => {}) => {
+    if (typeof ack !== "function") ack = () => {};
+    const id = String(p?.id || "");
+    if (!/^[a-f0-9]{12}$/.test(id)) return ack({ error: "Foto non valida." });
+    if (state.gallery.some((g) => g.id === id)) return ack({ ok: true });
+    if (state.gallery.length >= MAX_GALLERY) return ack({ error: `Puoi salvare al massimo ${MAX_GALLERY} foto: cancellane qualcuna.` });
+    const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(p?.data || ""));
+    const buf = m ? Buffer.from(m[1], "base64") : null;
+    if (!buf || buf.length < 500 || buf.length > 800 * 1024) return ack({ error: "Foto non valida o troppo grande." });
+    try { fs.mkdirSync(BANNER_DIR, { recursive: true }); fs.writeFileSync(bannerPath(id), buf); }
+    catch { return ack({ error: "Non riesco a salvare la foto sul server." }); }
+    state.gallery.push({ id, name: clean(p?.name, 30) });
+    broadcast(); ack({ ok: true });
+  });
+  socket.on("dj:galleryRemove", (id) => {
+    state.gallery = state.gallery.filter((g) => g.id !== id);
+    try { fs.unlinkSync(bannerPath(id)); } catch {}
+    const b = state.settings.banner;
+    b.circles = b.circles.filter((c) => c !== id);
+    broadcast();
+  });
+  socket.on("dj:banner", (b) => {
+    const cur = state.settings.banner;
+    if (typeof b?.text === "string") cur.text = clean(b.text, 40) || DEFAULT_BANNER.text;
+    if (Array.isArray(b?.circles)) {
+      const ok = new Set([...Object.keys(BUILTIN), ...state.gallery.map((g) => g.id)]);
+      cur.circles = [...new Set(b.circles.map(String))].filter((c) => ok.has(c)).slice(0, MAX_CIRCLES);
+    }
+    cur.updatedAt = Math.max(Date.now(), +b?.updatedAt || 0);
+    broadcast();
+  });
+  socket.on("dj:bannerReset", () => { state.settings.banner = { ...DEFAULT_BANNER, circles: [...DEFAULT_BANNER.circles], updatedAt: Date.now() }; broadcast(); });
   socket.on("dj:move", ({ id, dir }) => {
     const w = waiting(); const i = w.findIndex((q) => q.id === id); const j = i + (dir < 0 ? -1 : 1);
     if (i < 0 || j < 0 || j >= w.length) return;
@@ -466,10 +531,20 @@ io.on("connection", (socket) => {
     if (s?.minutesPerSong) st.minutesPerSong = Math.min(10, Math.max(2, parseInt(s.minutesPerSong) || 4));
     broadcast();
   });
+  // fine serata: via coda, selfie e foto dei festeggiati; il banner torna quello predefinito
   socket.on("dj:reset", () => {
     state.queue = [];
     try { fs.rmSync(SELFIE_DIR, { recursive: true, force: true }); } catch {}
+    clearGallery();
+    state.settings.banner = { ...DEFAULT_BANNER, circles: [...DEFAULT_BANNER.circles], updatedAt: Date.now() };
     broadcast(); cueCurrent();
+  });
+  socket.on("dj:galleryClear", () => {
+    const ids = new Set(state.gallery.map((g) => g.id));
+    clearGallery();
+    const b = state.settings.banner;
+    b.circles = b.circles.filter((c) => !ids.has(c)); b.updatedAt = Date.now();
+    broadcast();
   });
   socket.on("dj:player", (cmd) => io.to("screen").emit("player:cmd", cmd));
   socket.on("dj:filler", (cmd) => io.to("screen").emit("filler:cmd", cmd));

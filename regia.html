@@ -71,6 +71,30 @@
   .eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
   @keyframes eq{0%,100%{height:4px}50%{height:14px}}
   input[type=range]{accent-color:var(--lime);width:100%}
+  .hint{font-size:13px;color:var(--muted);font-weight:400;margin:0}
+  .bn-preview{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;padding:12px;border-radius:4px;background:#11160c}
+  .bn-item{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .bn-item .row{gap:0}
+  .bn-item .icon-btn{width:26px;height:26px;font-size:13px;color:#cfd8c2}
+  .circ{width:56px;height:56px;border-radius:50%;background:var(--surface-2) center/cover no-repeat;border:2px solid var(--lime);display:grid;place-items:center;flex:none}
+  .circ.mic{background:#11160c}
+  .circ.mic svg{width:70%;height:70%}
+  .bn-logo{align-self:center;display:flex;flex-direction:column;gap:4px;padding-left:4px}
+  .bn-logo span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#a9b49a}
+  .bn-logo img{height:20px;width:auto}
+  .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px}
+  .gal-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:0;cursor:pointer;color:var(--fg);font-size:11px}
+  .gal-item .circ{border-color:var(--line)}
+  .gal-item:hover .circ{border-color:var(--lime)}
+  .gal-item.used .circ{border-color:var(--lime);box-shadow:0 0 0 3px var(--lime-soft)}
+  .gal-item .nm{max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+  .gal-del{position:absolute;top:-4px;right:2px;width:22px;height:22px;border-radius:50%;border:0;background:var(--surface);box-shadow:0 0 0 1px var(--line);color:var(--live);cursor:pointer;font-size:12px;display:grid;place-items:center}
+  .cropper{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(0,0,0,.6);padding:16px}
+  .cropper .card{width:100%;max-width:360px}
+  .crop-stage{position:relative;width:min(280px,72vw);aspect-ratio:1;margin:0 auto;overflow:hidden;border-radius:6px;touch-action:none;cursor:grab;background:#000}
+  .crop-stage:active{cursor:grabbing}
+  .crop-stage canvas{width:100%;height:100%;display:block}
+  .crop-ring{position:absolute;inset:6%;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);border:3px solid var(--lime);pointer-events:none}
   .rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
   .rank li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 10px;border-radius:4px;background:var(--surface-2);font-size:14px}
   .rank li:first-child{background:var(--lime-soft);outline:1px solid var(--lime)}
@@ -152,6 +176,28 @@
         <div class="switch"><span><b>Sovraimpressioni durante la canzone</b><br><span style="font-size:13px;color:var(--muted)">Foto e nome di chi canta in alto a sinistra, QR in alto a destra. Spegnile se coprono il testo di un video</span></span><button class="toggle" id="setLive" role="switch" aria-checked="true" aria-label="Sovraimpressioni durante la canzone" type="button"></button></div>
       </section>
 
+      <section class="card stack" id="bannerCard">
+        <span class="label">Banner dello schermo</span>
+        <p class="hint">Compare sotto «Chi canta?» a palco libero. Il logo Lopee J resta sempre in fondo.</p>
+        <div class="field"><label for="bannerText">Testo sopra il logo</label><input type="text" id="bannerText" maxlength="40" placeholder="Stasera alla console"></div>
+        <div class="stack" style="gap:6px">
+          <b style="font-size:14px">Cerchi sullo schermo <span class="hint" id="bnCount"></span></b>
+          <div class="bn-preview" id="bnPreview"></div>
+        </div>
+        <div class="stack" style="gap:6px">
+          <b style="font-size:14px">Le tue foto</b>
+          <span class="hint">Tocca una foto per aggiungerla al banner.</span>
+          <div class="gal" id="gallery"></div>
+        </div>
+        <div class="row">
+          <label class="btn sm" for="galFile">＋ Aggiungi foto</label>
+          <input type="file" id="galFile" accept="image/*" hidden>
+          <button class="btn sm" id="bannerReset" type="button">Ripristina predefinito</button>
+          <button class="btn sm danger" id="galClear" type="button">Cancella tutte le foto</button>
+        </div>
+        <p class="hint">Le foto valgono solo per la festa in corso: vengono cancellate, e il banner torna quello predefinito, quando premi <b>Fine serata</b>. Per sicurezza, durante la serata la regia ne tiene una copia temporanea e le ricarica da sola se il server si riavvia.</p>
+      </section>
+
       <section class="card stack" id="voteCard">
         <span class="label">Voto del pubblico</span>
         <div class="switch"><span><b>Voto aperto</b><br><span style="font-size:13px;color:var(--muted)">Il pubblico vota dal telefono da 1 a 5 applausi; l'esito esplode sullo schermo a fine canzone</span></span><button class="toggle" id="voteOn" role="switch" aria-checked="false" aria-label="Voto del pubblico aperto" type="button"></button></div>
@@ -183,24 +229,35 @@
   </div>
 </div>
 
+<div class="cropper" id="cropper" hidden>
+  <div class="card stack">
+    <span class="label">Ritaglia la foto</span>
+    <div class="crop-stage" id="cropStage"><canvas id="cropCanvas" width="560" height="560"></canvas><div class="crop-ring"></div></div>
+    <span class="hint" style="text-align:center">Trascina per centrare il viso, usa lo zoom per avvicinarti.</span>
+    <div class="field"><label for="cropZoom">Zoom</label><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1"></div>
+    <div class="field"><label for="cropName">Nome <span class="hint">(facoltativo)</span></label><input type="text" id="cropName" maxlength="30" placeholder="Es. Marco"></div>
+    <div class="row"><button class="btn primary" id="cropSave" type="button">Salva foto</button><button class="btn" id="cropCancel" type="button">Annulla</button></div>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/common.js"></script>
 <script>
 (function () {
-  const { $, esc, store, toast, fmtTime, setStatus, brandHTML, avatarHTML } = K;
+  const { $, esc, store, toast, fmtTime, setStatus, brandHTML, avatarHTML, micSVG } = K;
   let S = null, socket = null, openId = null, confirmReset = false, player = { state: "idle", time: 0, duration: 0 };
 
   // ---------- accesso ----------
   function connect(pin) {
     if (socket) socket.close();
     socket = io({ auth: { role: "dj", pin } });
-    socket.on("connect", () => { store.set("karaoke-pin", pin); $("#gate").hidden = true; setStatus(true, "In diretta"); });
+    socket.on("connect", () => { synced = false;  store.set("karaoke-pin", pin); $("#gate").hidden = true; setStatus(true, "In diretta"); });
     socket.on("connect_error", (e) => {
       if (e.message === "pin") { store.del("karaoke-pin"); $("#gate").hidden = false; $("#gateErr").textContent = "PIN sbagliato."; socket.close(); }
       else setStatus(false, "Server non raggiungibile");
     });
     socket.on("disconnect", () => setStatus(false, "Riconnessione…"));
-    socket.on("state", (s) => { S = s; player = s.player || player; render(); });
+    socket.on("state", (s) => { S = s; player = s.player || player; render(); if (!synced) { synced = true; restoreBanner(); } });
     socket.on("player", (p) => { player = p; renderProgress(); });
     socket.on("notice", (m) => showNotice(m));
   }
@@ -328,19 +385,158 @@
     $("#setSelfies").setAttribute("aria-checked", String(S.settings.showSelfies !== false));
     $("#setLive").setAttribute("aria-checked", String(S.settings.liveOverlay !== false));
     renderVote(cur);
+    renderBanner();
     const fl = S.settings.filler || {};
     $("#fillerOn").setAttribute("aria-checked", String(fl.enabled !== false));
     sync("#fillerUrl", fl.url); sync("#fillerVol", fl.volume ?? 60); $("#fillerVolTxt").textContent = (fl.volume ?? 60) + "%";
     sync("#fillerVis", fl.visibility ?? 45); $("#fillerVisTxt").textContent = (fl.visibility ?? 45) ? (fl.visibility ?? 45) + "%" : "spento";
     renderFiller();
     $("#resetArea").innerHTML = confirmReset
-      ? `<div class="row"><span style="font-size:14px">Cancello coda e storico della serata?</span><button class="btn danger sm" data-act="resetyes">Sì, svuota</button><button class="btn sm" data-act="resetno">Annulla</button></div>`
-      : `<button class="btn danger" data-act="reset">Svuota coda e storico</button>`;
+      ? `<div class="row"><span style="font-size:14px">Cancello coda, storico, classifica e foto del banner?</span><button class="btn danger sm" data-act="resetyes">Sì, svuota</button><button class="btn sm" data-act="resetno">Annulla</button></div>`
+      : `<button class="btn danger" data-act="reset">Fine serata: svuota tutto</button>`;
 
     Object.entries(keep).forEach(([id, k]) => { const el = document.getElementById(id); if (el && k.dirty) { el.value = k.v; el.dataset.dirty = "1"; } });
     if (focusId) { const el = document.getElementById(focusId); if (el && el !== document.activeElement) { el.focus(); if (el.type === "text") { const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } }
   }
   function sync(sel, v) { const el = $(sel); if (document.activeElement !== el) el.value = v ?? ""; }
+
+  // ---------- banner dello schermo ----------
+  // le foto e il banner restano anche nel browser di questo dispositivo, così sopravvivono ai riavvii del server
+  let synced = false;
+  const BUILT = [{ id: "dj", name: "Lopee J", url: "/dj-faccia-2.jpg" }, { id: "dj2", name: "Lopee J", url: "/dj-faccia-1.jpg" }, { id: "mic", name: "Microfono", mic: true }];
+  // copia temporanea solo per la serata in corso: scade da sola dopo 12 ore
+  const TTL = 12 * 3600 * 1000;
+  const loadLib = () => store.get("karaoke-gallery", []).filter((p) => Date.now() - (p.at || 0) < TTL);
+  function clearLocalBanner() { store.del("karaoke-gallery"); store.del("karaoke-banner"); }
+  function saveLocal(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch { toast("Memoria del browser piena: cancella qualche foto"); return false; } }
+  const bannerCfg = () => S.settings.banner || { text: "Stasera alla console", circles: ["dj", "mic"] };
+  function setBanner(patch) {
+    const b = { text: bannerCfg().text, circles: [...bannerCfg().circles], ...patch, updatedAt: Date.now() };
+    saveLocal("karaoke-banner", b);
+    emit("dj:banner", b);
+  }
+  function restoreBanner() {
+    const have = new Set((S.gallery || []).map((g) => g.id));
+    const lib = loadLib();
+    lib.filter((p) => !have.has(p.id)).forEach((p) => emit("dj:galleryAdd", p));
+    saveLocal("karaoke-gallery", lib); // toglie le foto scadute
+    let local = store.get("karaoke-banner");
+    if (local && Date.now() - (local.updatedAt || 0) > TTL) { store.del("karaoke-banner"); local = null; }
+    const srv = bannerCfg();
+    if (local && (local.updatedAt || 0) > (srv.updatedAt || 0)) emit("dj:banner", local);
+    else if (srv.updatedAt) saveLocal("karaoke-banner", srv);
+    if (lib.length && lib.some((p) => !have.has(p.id))) toast("Foto del banner ricaricate sul server");
+  }
+  function itemFor(id) {
+    const b = BUILT.find((x) => x.id === id);
+    if (b) return b;
+    const g = (S.gallery || []).find((x) => x.id === id);
+    return g ? { id, name: g.name, url: g.url } : null;
+  }
+  const circ = (it) => it.mic ? `<span class="circ mic">${micSVG()}</span>` : `<span class="circ" style="background-image:url('${esc(it.url)}')"></span>`;
+  function renderBanner() {
+    const b = bannerCfg(), max = S.maxCircles || 6;
+    // se il banner è stato cambiato da un altro dispositivo, aggiorna la copia locale
+    if (synced && b.updatedAt && b.updatedAt > ((store.get("karaoke-banner") || {}).updatedAt || 0)) saveLocal("karaoke-banner", b);
+    sync("#bannerText", b.text);
+    const items = b.circles.map(itemFor).filter(Boolean);
+    $("#bnCount").textContent = `(${items.length} su ${max} · il primo sta davanti)`;
+    $("#bnPreview").innerHTML = items.map((it, i) => `<div class="bn-item">${circ(it)}<div class="row">
+        <button class="icon-btn" data-bn="left" data-i="${i}" title="Sposta a sinistra" aria-label="Sposta a sinistra" ${i === 0 ? "disabled" : ""}>←</button>
+        <button class="icon-btn" data-bn="del" data-i="${i}" title="Togli dal banner" aria-label="Togli dal banner">✕</button>
+        <button class="icon-btn" data-bn="right" data-i="${i}" title="Sposta a destra" aria-label="Sposta a destra" ${i === items.length - 1 ? "disabled" : ""}>→</button>
+      </div></div>`).join("") + `<div class="bn-logo"><span>${esc(b.text)}</span><img src="/logo.png" alt="Lopee J"></div>`;
+    const used = new Set(b.circles);
+    const all = [...BUILT, ...(S.gallery || [])];
+    $("#gallery").innerHTML = all.map((it) => `<div style="position:relative"><button type="button" class="gal-item${used.has(it.id) ? " used" : ""}" data-gal="${esc(it.id)}" title="${used.has(it.id) ? "Già nel banner" : "Aggiungi al banner"}">${circ(it)}<span class="nm">${esc(it.name || "Foto")}</span></button>${BUILT.some((x) => x.id === it.id) ? "" : `<button type="button" class="gal-del" data-galdel="${esc(it.id)}" title="Cancella la foto" aria-label="Cancella la foto">✕</button>`}</div>`).join("");
+  }
+  document.addEventListener("click", (e) => {
+    const bn = e.target.closest("[data-bn]");
+    if (bn) {
+      const c = [...bannerCfg().circles].filter((id) => itemFor(id)), i = +bn.dataset.i;
+      if (bn.dataset.bn === "del") c.splice(i, 1);
+      if (bn.dataset.bn === "left" && i > 0) [c[i - 1], c[i]] = [c[i], c[i - 1]];
+      if (bn.dataset.bn === "right" && i < c.length - 1) [c[i + 1], c[i]] = [c[i], c[i + 1]];
+      return setBanner({ circles: c });
+    }
+    const del = e.target.closest("[data-galdel]");
+    if (del) {
+      const id = del.dataset.galdel;
+      saveLocal("karaoke-gallery", loadLib().filter((p) => p.id !== id));
+      emit("dj:galleryRemove", id);
+      const b = store.get("karaoke-banner"); if (b) { b.circles = b.circles.filter((x) => x !== id); saveLocal("karaoke-banner", b); }
+      return toast("Foto cancellata");
+    }
+    const g = e.target.closest("[data-gal]");
+    if (g) {
+      const c = [...bannerCfg().circles];
+      if (c.includes(g.dataset.gal)) return toast("Questa foto è già nel banner");
+      if (c.length >= (S.maxCircles || 6)) return toast(`Al massimo ${S.maxCircles || 6} cerchi: togline uno prima`);
+      return setBanner({ circles: [...c, g.dataset.gal] });
+    }
+  });
+  $("#bannerText").onchange = (e) => setBanner({ text: e.target.value.trim() || "Stasera alla console" });
+  let clearArmed = null;
+  $("#galClear").onclick = (e) => {
+    if (!(S.gallery || []).length) return toast("Non ci sono foto da cancellare");
+    if (!clearArmed) { e.target.textContent = "Sicuro? Tocca di nuovo"; clearArmed = setTimeout(() => { clearArmed = null; e.target.textContent = "Cancella tutte le foto"; }, 4000); return; }
+    clearTimeout(clearArmed); clearArmed = null; e.target.textContent = "Cancella tutte le foto";
+    store.del("karaoke-gallery");
+    const b = store.get("karaoke-banner"); if (b) { b.circles = b.circles.filter((c) => BUILT.some((x) => x.id === c)); saveLocal("karaoke-banner", b); }
+    emit("dj:galleryClear"); toast("Foto cancellate");
+  };
+  $("#bannerReset").onclick = () => { emit("dj:bannerReset"); store.del("karaoke-banner"); toast("Banner predefinito ripristinato"); };
+
+  // ---------- ritaglio della foto ----------
+  const crop = { img: null, zoom: 1, x: 0, y: 0 };
+  const cv = $("#cropCanvas"), cx = cv.getContext("2d");
+  function cropDraw(ctx, size) {
+    const { img } = crop, base = Math.max(size / img.naturalWidth, size / img.naturalHeight), sc = base * crop.zoom;
+    const w = img.naturalWidth * sc, h = img.naturalHeight * sc, k = size / cv.width;
+    // la foto deve sempre coprire tutto il riquadro
+    crop.x = Math.min(Math.max(crop.x, (cv.width - w / k) / 2), (w / k - cv.width) / 2);
+    crop.y = Math.min(Math.max(crop.y, (cv.width - h / k) / 2), (h / k - cv.width) / 2);
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, size, size);
+    ctx.drawImage(img, size / 2 - w / 2 + crop.x * k, size / 2 - h / 2 + crop.y * k, w, h);
+  }
+  const redraw = () => crop.img && cropDraw(cx, cv.width);
+  $("#galFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
+    if ((S.gallery || []).length >= (S.maxGallery || 24)) return toast(`Puoi salvare al massimo ${S.maxGallery || 24} foto: cancellane qualcuna`);
+    const url = URL.createObjectURL(f), img = new Image();
+    img.onload = () => { crop.img = img; crop.zoom = 1; crop.x = 0; crop.y = 0; $("#cropZoom").value = 1; $("#cropName").value = ""; $("#cropper").hidden = false; redraw(); };
+    img.onerror = () => toast("Non riesco a leggere questa foto: provane un'altra");
+    img.src = url;
+  });
+  $("#cropZoom").oninput = (e) => { crop.zoom = +e.target.value; redraw(); };
+  let drag = null;
+  $("#cropStage").addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY }; e.currentTarget.setPointerCapture(e.pointerId); });
+  $("#cropStage").addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const k = cv.width / e.currentTarget.getBoundingClientRect().width;
+    crop.x += (e.clientX - drag.x) * k; crop.y += (e.clientY - drag.y) * k; drag = { x: e.clientX, y: e.clientY }; redraw();
+  });
+  ["pointerup", "pointercancel"].forEach((t) => $("#cropStage").addEventListener(t, () => (drag = null)));
+  $("#cropStage").addEventListener("wheel", (e) => { e.preventDefault(); crop.zoom = Math.min(4, Math.max(1, crop.zoom - e.deltaY / 500)); $("#cropZoom").value = crop.zoom; redraw(); }, { passive: false });
+  $("#cropCancel").onclick = () => { $("#cropper").hidden = true; crop.img = null; };
+  $("#cropSave").onclick = () => {
+    if (!crop.img) return;
+    // salva solo l'area dentro il cerchio (che occupa l'88% del riquadro)
+    const big = document.createElement("canvas"); big.width = big.height = 560; cropDraw(big.getContext("2d"), 560);
+    const out = document.createElement("canvas"); out.width = out.height = 360;
+    out.getContext("2d").drawImage(big, 560 * .06, 560 * .06, 560 * .88, 560 * .88, 0, 0, 360, 360);
+    const id = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, "0")).join("");
+    const photo = { id, at: Date.now(), name: $("#cropName").value.trim().slice(0, 30), data: out.toDataURL("image/jpeg", 0.85) };
+    emit("dj:galleryAdd", photo, (r) => {
+      if (r?.error) return toast(r.error);
+      saveLocal("karaoke-gallery", [...loadLib().filter((p) => p.id !== id), photo]);
+      $("#cropper").hidden = true; crop.img = null;
+      const c = bannerCfg().circles;
+      if (c.length < (S.maxCircles || 6)) { setBanner({ circles: [...c, id] }); toast("Foto salvata e aggiunta al banner"); }
+      else toast("Foto salvata nella galleria");
+    });
+  };
+
   function renderVote(cur) {
     const on = !!S.settings.voting;
     $("#voteOn").setAttribute("aria-checked", String(on));
@@ -407,7 +603,7 @@
       case "use": emit("dj:setVideo", { id, videoId: t.dataset.v }); return toast("Base cambiata");
       case "reset": confirmReset = true; return render();
       case "resetno": confirmReset = false; return render();
-      case "resetyes": confirmReset = false; emit("dj:reset"); return toast("Serata svuotata");
+      case "resetyes": confirmReset = false; clearLocalBanner(); emit("dj:reset"); return toast("Serata svuotata: pronti per la prossima festa");
     }
   });
   document.addEventListener("submit", (e) => {
