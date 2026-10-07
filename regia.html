@@ -119,6 +119,7 @@
     <div><div class="brand" id="nightName"></div><div class="brand-sub">Regia</div></div>
     <div class="row">
       <span class="chip" id="ytChip"></span>
+      <span class="chip warn" id="demoChip" hidden>DEMO</span>
       <span class="chip" id="screenChip"></span>
       <a class="btn sm" href="/schermo" target="_blank" rel="noopener">Apri schermo ↗</a>
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">Collegamento…</span></div>
@@ -218,6 +219,17 @@
         <div class="field"><label for="fillerVol">Volume <span class="mono" id="fillerVolTxt"></span></label><input type="range" id="fillerVol" min="0" max="100" step="5"></div>
         <div class="field"><label for="fillerVis">Video sullo schermo <span class="mono" id="fillerVisTxt"></span></label><input type="range" id="fillerVis" min="0" max="90" step="5"><span style="font-size:12px;color:var(--muted)">Quanto si vede il video dietro la grafica. A 0 resta solo l'audio.</span></div>
         <div class="row"><button class="btn sm" id="fillerSkip" type="button">Salta brano</button><button class="btn sm" id="fillerPause" type="button">Ferma ora</button></div>
+      </section>
+
+      <section class="card stack" id="demoCard">
+        <span class="label">Modalità demo</span>
+        <p class="hint">Per girare video e fare prove senza una festa vera: riempie la coda con 5 cantanti finti (con avatar disegnati), lo storico con 4 esibizioni già votate e fa arrivare voti finti mentre si canta. Gli ospiti veri possono comunque prenotare e votare.</p>
+        <button class="btn primary" id="demoBtn" type="button">Avvia la demo</button>
+        <div class="stack" id="demoTools" hidden style="gap:8px">
+          <b style="font-size:14px">Mostra subito un esito sullo schermo</b>
+          <div class="row" id="demoLevels"></div>
+          <span class="hint">Non cambia classifica né voti: serve solo per filmare i 5 pop-up. Per la classifica e il vincitore usa i pulsanti nel riquadro Voto del pubblico.</span>
+        </div>
       </section>
 
       <section class="card stack">
@@ -386,6 +398,10 @@
     $("#setLive").setAttribute("aria-checked", String(S.settings.liveOverlay !== false));
     renderVote(cur);
     renderBanner();
+    $("#demoChip").hidden = !S.demo;
+    $("#demoTools").hidden = !S.demo;
+    $("#demoBtn").textContent = S.demo ? "Esci dalla demo" : "Avvia la demo";
+    $("#demoBtn").className = "btn " + (S.demo ? "danger" : "primary");
     const fl = S.settings.filler || {};
     $("#fillerOn").setAttribute("aria-checked", String(fl.enabled !== false));
     sync("#fillerUrl", fl.url); sync("#fillerVol", fl.volume ?? 60); $("#fillerVolTxt").textContent = (fl.volume ?? 60) + "%";
@@ -475,6 +491,13 @@
       return setBanner({ circles: [...c, g.dataset.gal] });
     }
   });
+  const LV = ["", "Delusione", "Zero entusiasmo", "Bene!", "Spettacolo!", "Standing ovation!"];
+  $("#demoLevels").innerHTML = [1, 2, 3, 4, 5].map((n) => `<button class="btn sm" type="button" data-demolv="${n}" title="${LV[n]}">${n} · ${LV[n]}</button>`).join("");
+  $("#demoLevels").onclick = (e) => { const b = e.target.closest("[data-demolv]"); if (b) emit("dj:demoResult", +b.dataset.demolv); };
+  $("#demoBtn").onclick = () => {
+    if (S.demo) { emit("dj:demo", false); return toast("Demo chiusa: coda e storico finti cancellati"); }
+    emit("dj:demo", true); toast("Demo avviata: premi «Chiama sul palco» per iniziare");
+  };
   $("#bannerText").onchange = (e) => setBanner({ text: e.target.value.trim() || "Stasera alla console" });
   let clearArmed = null;
   $("#galClear").onclick = (e) => {

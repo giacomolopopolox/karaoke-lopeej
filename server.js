@@ -132,14 +132,60 @@ function ranking(limit = 10) {
     .slice(0, limit)
     .map((q) => ({ id: q.id, singer: q.singer, title: q.title, artist: q.artist, avg: q.score.avg, count: q.score.count }));
 }
-const selfieUrl = (q) => (q.hasSelfie ? `/selfie/${q.id}?t=${SELFIE_TOKEN}` : null);
+const selfieUrl = (q) => (q.demoPic ? q.demoPic : q.hasSelfie ? `/selfie/${q.id}?t=${SELFIE_TOKEN}` : null);
+
+// ---------- modalità demo: cantanti finti, voti finti ed esiti a comando, per video e prove ----------
+const DEMO_DONE = [
+  ["Giulia", "Sarà perché ti amo", "Ricchi e Poveri", 4.6, 18], ["Marco", "Albachiara", "Vasco Rossi", 4.2, 16],
+  ["Chiara", "Rolling in the Deep", "Adele", 3.8, 14], ["Davide", "Azzurro", "Adriano Celentano", 3.1, 12]
+];
+const DEMO_QUEUE = [
+  ["Sara", "Gli anni", "883"], ["Luca", "Bohemian Rhapsody", "Queen"], ["Elena", "Dancing Queen", "ABBA"],
+  ["Paolo", "Vita spericolata", "Vasco Rossi"], ["Federica", "Tanti auguri", "Raffaella Carrà"]
+];
+let demoOn = false;
+function startDemo() {
+  stopDemo(false);
+  demoOn = true;
+  const now = Date.now();
+  DEMO_DONE.forEach(([singer, title, artist, avg, count], i) => state.queue.push({
+    id: uid(), singer, title, artist, source: "guest", status: "done", pos: 0, createdAt: now - 3600000 + i * 600000, endedAt: now - 3000000 + i * 600000,
+    candidates: [], videoId: null, search: { state: "idle" }, revealed: true, score: { avg, count }, demo: true, demoPic: `/demo-${i + 1}.jpg`
+  }));
+  DEMO_QUEUE.forEach(([singer, title, artist], i) => {
+    const item = { id: uid(), singer, title, artist, source: "guest", status: "waiting", pos: maxPos() + 1, createdAt: now + i,
+      candidates: [], videoId: null, search: { state: "idle" }, demo: true, demoPic: `/demo-${i + 5}.jpg`, demoLevel: [5, 4, 5, 3, 4][i] };
+    state.queue.push(item);
+    if (YT_KEY) searchFor(item);
+  });
+  state.settings.voting = true;
+  broadcast();
+}
+function stopDemo(send = true) {
+  const wasCurrent = current()?.demo;
+  demoOn = false;
+  state.queue = state.queue.filter((q) => !q.demo);
+  if (send) { broadcast(); if (wasCurrent) cueCurrent(); }
+}
+// voti finti che arrivano uno alla volta mentre canta un cantante della demo
+setInterval(() => {
+  const cur = current();
+  if (!demoOn || !cur || !cur.demo || !voteOpen(cur)) return;
+  cur.votes = cur.votes || {};
+  const n = Object.keys(cur.votes).length;
+  cur.demoTarget = cur.demoTarget || 16 + Math.floor(Math.random() * 9);
+  if (n >= cur.demoTarget) return;
+  const lv = cur.demoLevel || 4;
+  cur.votes["demo-" + n] = Math.max(1, Math.min(5, lv + (Math.random() < 0.25 ? -1 : 0) + (lv < 5 && Math.random() < 0.15 ? 1 : 0)));
+  broadcastStaff();
+}, 1000);
 
 // ---------- server web ----------
 const app = express();
 app.set("trust proxy", true);
 
 // Pubblica solo i file dell'app (mai server.js, package.json, .env o i dati)
-const PAGES = new Set(["index.html", "regia.html", "schermo.html", "privacy.html", "style.css", "common.js", "logo.png", "dj-capitano.jpg", "dj-paillettes.jpg", "dj-faccia-1.jpg", "dj-faccia-2.jpg"]);
+const PAGES = new Set(["index.html", "regia.html", "schermo.html", "privacy.html", "style.css", "common.js", "logo.png", "dj-capitano.jpg", "dj-paillettes.jpg", "dj-faccia-1.jpg", "dj-faccia-2.jpg", ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `demo-${n}.jpg`)]);
 const sendPage = (name) => (req, res) => res.sendFile(path.join(PUBLIC_DIR, name), { maxAge: /\.(png|jpg)$/.test(name) ? "1d" : 0 });
 app.get("/", sendPage("index.html"));
 app.get(["/regia", "/regia.html"], sendPage("regia.html"));
@@ -239,7 +285,7 @@ function djView() {
     screens: io.sockets.adapter.rooms.get("screen")?.size || 0,
     youtube: { enabled: !!YT_KEY, searchesToday: quota.day === today() ? quota.searches : 0 },
     gallery: state.gallery.map((g) => ({ id: g.id, name: g.name, url: `/banner/${g.id}.jpg` })),
-    maxCircles: MAX_CIRCLES, maxGallery: MAX_GALLERY
+    maxCircles: MAX_CIRCLES, maxGallery: MAX_GALLERY, demo: demoOn
   };
 }
 function clearGallery() {
@@ -532,7 +578,18 @@ io.on("connection", (socket) => {
     broadcast();
   });
   // fine serata: via coda, selfie e foto dei festeggiati; il banner torna quello predefinito
+  socket.on("dj:demo", (on) => (on ? startDemo() : stopDemo()));
+  // esito a comando (per filmare tutti e 5 i pop-up): non cambia classifica né voti veri
+  socket.on("dj:demoResult", (level) => {
+    level = Math.min(5, Math.max(1, parseInt(level) || 5));
+    const LABELS = ["", "Delusione", "Zero entusiasmo", "Bene!", "Spettacolo!", "Standing ovation!"];
+    const cur = current() || state.queue.find((q) => q.demo && q.status === "waiting") || { singer: "Sara", title: "Gli anni", artist: "883", demoPic: "/demo-5.jpg" };
+    const avg = [0, 1.3, 2.2, 3.1, 4.1, 4.8][level], count = 14 + Math.floor(Math.random() * 10);
+    io.to("screen").emit("vote:result", { id: cur.id || "demo", singer: cur.singer, title: cur.title, artist: cur.artist, avg, count, level, label: LABELS[level], selfie: selfieUrl(cur) });
+    io.to("guest").emit("vote:result", { singer: cur.singer, avg, count, level, label: LABELS[level] });
+  });
   socket.on("dj:reset", () => {
+    demoOn = false;
     state.queue = [];
     try { fs.rmSync(SELFIE_DIR, { recursive: true, force: true }); } catch {}
     clearGallery();

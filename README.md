@@ -41,6 +41,8 @@ Web app per le serate karaoke di Lopee J.
 
 **Banner dello schermo.** Nel riquadro **Banner dello schermo** della regia cambi il testo sopra il logo (di base «Stasera alla console») e scegli fino a 6 cerchi: le due foto di Lopee J, il microfono e le foto dei festeggiati che carichi (ritagliate a cerchio trascinando e zoomando). Il primo cerchio sta davanti; con le frecce cambi l'ordine. Il logo Lopee J resta sempre in fondo. Le foto valgono solo per la festa in corso: **Fine serata: svuota tutto** le cancella e riporta il banner a quello predefinito (Lopee J con il cappello rosso + microfono + «Stasera alla console»). Anche se ti dimentichi di premerlo, alla festa successiva riparti comunque dal banner predefinito.
 
+**Modalità demo.** In fondo alla regia, **Avvia la demo** riempie la coda con 5 cantanti finti (avatar disegnati), lo storico con 4 esibizioni votate e fa arrivare voti finti mentre si canta: serve per girare video e fare prove. I pulsanti **1…5** mostrano subito il pop-up di quell'esito, senza toccare la classifica. **Esci dalla demo** cancella tutto ciò che è finto; le prenotazioni vere restano.
+
 ## Avvio sul tuo computer (facoltativo)
 
 ```
