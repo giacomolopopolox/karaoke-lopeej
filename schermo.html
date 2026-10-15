@@ -105,6 +105,12 @@
   /* pulsante di emergenza: piccolo, rotondo, in basso a sinistra */
   .tap-play{position:fixed;left:clamp(14px,1.6vw,24px);bottom:clamp(14px,1.6vw,24px);z-index:15;width:clamp(44px,4.6vw,64px);aspect-ratio:1;border:0;border-radius:50%;background:var(--lime);color:var(--on-lime);
     font-family:var(--f-display);font-weight:700;font-size:clamp(22px,2.4vw,34px);line-height:1;cursor:pointer;display:grid;place-items:center;animation:tapPulse 1.6s ease-in-out infinite}
+  /* effetti sonori: emoji che sale dal basso */
+  .sfx-pop{position:fixed;left:50%;bottom:6vh;z-index:60;pointer-events:none;display:flex;align-items:center;gap:.25em;font-size:clamp(56px,10vh,120px);line-height:1;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5));animation:sfxUp 2.6s cubic-bezier(.2,.8,.3,1) forwards}
+  .sfx-pop span{display:inline-block;animation:sfxWiggle .5s ease-in-out infinite alternate}
+  .sfx-pop span:nth-child(2){animation-delay:.15s}.sfx-pop span:nth-child(3){animation-delay:.3s}
+  @keyframes sfxUp{0%{opacity:0;transform:translate(-50%,40px) scale(.6)}15%{opacity:1;transform:translate(-50%,0) scale(1.08)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-18vh) scale(1)}}
+  @keyframes sfxWiggle{from{transform:rotate(-12deg)}to{transform:rotate(12deg) translateY(-6px)}}
   @keyframes tapPulse{0%,100%{box-shadow:0 0 0 0 rgba(138,203,44,.55)}50%{box-shadow:0 0 0 12px rgba(138,203,44,0)}}
   .tap-play[hidden]{display:none}
   /* ---- classifica ---- */
@@ -211,6 +217,7 @@
     socket.on("filler:cmd", (c) => fillerCommand(c));
     socket.on("vote:result", (r) => showResult(r));
     socket.on("vote:winner", (w) => showWinner(w));
+    socket.on("sfx", (d) => playSfx(d));
   }
   $("#gateForm").addEventListener("submit", (e) => { e.preventDefault(); connect($("#pin").value); });
   const saved = store.get("karaoke-pin"); if (saved) connect(saved); else $("#gate").hidden = false;
@@ -484,6 +491,71 @@
       applause(7, 95, .7);
       setTimeout(() => actx && applause(4, 60, .5), 3000);
     }
+  }
+
+  // ---------- effetti sonori dalla regia ----------
+  let sfxBus = null;
+  function brass(f, t, dur, g, out) { // ottone: dente di sega con filtro che si apre
+    const o = actx.createOscillator(), lp = actx.createBiquadFilter(), env = actx.createGain();
+    o.type = "sawtooth"; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.04);
+    lp.type = "lowpass"; lp.Q.value = 2; lp.frequency.setValueAtTime(f * 1.5, t); lp.frequency.linearRampToValueAtTime(f * 6, t + 0.06); lp.frequency.linearRampToValueAtTime(f * 4, t + dur);
+    env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + 0.03); env.gain.setValueAtTime(g * 0.85, t + Math.max(0.05, dur - 0.08)); env.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(lp); lp.connect(env); env.connect(out); o.start(t); o.stop(t + dur + 0.05);
+    return o;
+  }
+  function whistle(t, pts, g, out) { // fischio con le dita: sinusoide acuta con glissando e vibrato
+    const o = actx.createOscillator(), env = actx.createGain(), lfo = actx.createOscillator(), lg = actx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(pts[0][1], t);
+    pts.slice(1).forEach(([d, f]) => o.frequency.exponentialRampToValueAtTime(f, t + d));
+    const end = pts[pts.length - 1][0];
+    lfo.frequency.value = 7 + Math.random() * 4; lg.gain.value = 25; lfo.connect(lg); lg.connect(o.frequency);
+    env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + 0.03); env.gain.setValueAtTime(g, t + end * 0.8); env.gain.linearRampToValueAtTime(0, t + end);
+    o.connect(env); env.connect(out); o.start(t); lfo.start(t); o.stop(t + end + 0.05); lfo.stop(t + end + 0.05);
+  }
+  function crowd(t, dur, g, out) { // brusio di folla che esulta
+    const src = actx.createBufferSource(); src.buffer = noise; src.loop = true;
+    const bp = actx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 700; bp.Q.value = 0.6;
+    const env = actx.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + 0.5); env.gain.setValueAtTime(g, t + dur - 1); env.gain.linearRampToValueAtTime(0, t + dur);
+    src.connect(bp); bp.connect(env); env.connect(out); src.start(t); src.stop(t + dur + 0.1);
+  }
+  const SFX_EMOJI = { applausi: "👏👏👏", trombe: "🎺🎉🎺", fischi: "😙🎶😙", flop: "📉😬📉" };
+  function sfxPop(k) {
+    document.querySelectorAll(".sfx-pop").forEach((e) => e.remove());
+    const el = document.createElement("div"); el.className = "sfx-pop"; el.setAttribute("aria-hidden", "true");
+    el.innerHTML = [...SFX_EMOJI[k]].map((c) => `<span>${c}</span>`).join("");
+    document.body.appendChild(el); setTimeout(() => el.remove(), 2700);
+  }
+  function playSfx(d) {
+    const k = d && d.k;
+    if (k === "stop") { if (sfxBus && actx) { sfxBus.gain.setTargetAtTime(0, actx.currentTime, 0.08); sfxBus = null; } document.querySelectorAll(".sfx-pop").forEach((e) => e.remove()); return; }
+    if (!SFX_EMOJI[k]) return;
+    if (!actx) { socket.emit("screen:problem", "notActive"); return; }
+    if (actx.state === "suspended") actx.resume();
+    // ogni effetto ha il suo volume: se ne premi un altro si sovrappone, Stop li spegne tutti
+    if (!sfxBus) { sfxBus = actx.createGain(); sfxBus.connect(master); }
+    const out = actx.createGain(); out.gain.value = Math.max(0, Math.min(100, +d.vol || 0)) / 100 * 1.3; out.connect(sfxBus);
+    const t = actx.currentTime + 0.03;
+    const savedMaster = master; master = out; // applause()/clap() suonano su master: li dirotto sull'effetto
+    try {
+      if (k === "applausi") { applause(6, 70, .65); crowd(t, 6, .05, out); }
+      else if (k === "trombe") { // fanfara "ta-ta-ta-taaa" con accordo finale
+        [[392, 0, .16], [392, .2, .16], [392, .4, .16], [523, .6, .5], [392, 1.15, .2], [523, 1.4, 1.2]].forEach(([f, d2, l]) => { brass(f, t + d2, l, .16, out); brass(f * 1.5, t + d2, l, .07, out); });
+        [659, 784].forEach((f) => brass(f, t + 1.4, 1.2, .09, out));
+        setTimeout(() => { if (actx) { master = out; try { applause(3, 40, .45); } finally { master = savedMaster; } } }, 1300);
+      } else if (k === "fischi") { // fischi di festa dal pubblico
+        whistle(t, [[0, 1300], [.22, 2700], [.32, 1600], [.62, 2900], [.95, 1200]], .16, out); // fiu-fiuuu
+        for (let i = 0; i < 7; i++) {
+          const s = t + .5 + Math.random() * 2.2, f = 2200 + Math.random() * 1200, l = .35 + Math.random() * .6;
+          whistle(s, Math.random() < .5 ? [[0, f * .8], [.08, f], [l, f * 1.04]] : [[0, f], [l * .6, f * 1.15], [l, f * .7]], .07 + Math.random() * .05, out);
+        }
+        crowd(t + .3, 3, .06, out); applause(3, 25, .35);
+      } else if (k === "flop") { // trombone triste "wah wah wah waaah"
+        [[233, 0, .45], [220, .5, .45], [208, 1, .45]].forEach(([f, d2, l]) => { const o = brass(f, t + d2, l, .28, out); o.frequency.linearRampToValueAtTime(f * .97, t + d2 + l); });
+        const o = brass(196, t + 1.5, 1.8, .28, out);
+        const lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 6; lg.gain.value = 7; lfo.connect(lg); lg.connect(o.frequency); lfo.start(t + 1.7); lfo.stop(t + 3.4);
+      }
+    } finally { master = savedMaster; }
+    sfxPop(k);
   }
   // coriandoli verdi, bianchi e oro
   function confetti(n, rain) {

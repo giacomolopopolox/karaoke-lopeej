@@ -37,7 +37,8 @@ const BUILTIN = {
   dj2: { type: "img", url: "/dj-faccia-1.jpg", label: "Lopee J" },
   mic: { type: "mic", label: "Microfono" }
 };
-const DEFAULT_SETTINGS = { banner: { ...DEFAULT_BANNER }, name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, songVolume: 100, songMuted: false, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
+const SFX = new Set(["applausi", "trombe", "fischi", "flop", "stop"]);
+const DEFAULT_SETTINGS = { banner: { ...DEFAULT_BANNER }, name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, songVolume: 100, songMuted: false, sfxVolume: 80, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
 
 // Musica d'attesa: accetta il link di un video o di una playlist YouTube
 function parseFiller(raw) {
@@ -559,6 +560,7 @@ io.on("connection", (socket) => {
     if (typeof s?.open === "boolean") st.open = s.open;
     if (typeof s?.showSelfies === "boolean") st.showSelfies = s.showSelfies;
     if (typeof s?.liveOverlay === "boolean") st.liveOverlay = s.liveOverlay;
+    if (s?.sfxVolume != null) st.sfxVolume = Math.min(100, Math.max(0, parseInt(s.sfxVolume) || 0));
     if (s?.songVolume != null) st.songVolume = Math.min(100, Math.max(0, parseInt(s.songVolume) || 0));
     if (typeof s?.songMuted === "boolean") st.songMuted = s.songMuted;
     if (typeof s?.voting === "boolean") st.voting = s.voting;
@@ -607,6 +609,13 @@ io.on("connection", (socket) => {
   });
   socket.on("dj:player", (cmd) => io.to("screen").emit("player:cmd", cmd));
   socket.on("dj:filler", (cmd) => io.to("screen").emit("filler:cmd", cmd));
+  // effetti sonori della regia: suonano sullo schermo
+  socket.on("dj:sfx", (k, cb) => {
+    if (!SFX.has(k)) return;
+    const screens = io.sockets.adapter.rooms.get("screen")?.size || 0;
+    io.to("screen").emit("sfx", { k, vol: state.settings.sfxVolume ?? 80 });
+    if (typeof cb === "function") cb({ screens });
+  });
 });
 
 server.listen(PORT, () => {

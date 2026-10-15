@@ -71,6 +71,13 @@
   .eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
   @keyframes eq{0%,100%{height:4px}50%{height:14px}}
   input[type=range]{accent-color:var(--lime);width:100%}
+  .sfx-card{padding:12px 16px;gap:10px}
+  .sfx-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .sfx-grid .btn{flex-direction:column;gap:2px;padding:10px 4px;min-height:64px;font-size:13px;justify-content:center}
+  .sfx-grid .btn .e{font-size:24px;line-height:1}
+  .sfx-grid .btn kbd{font:11px/1 var(--mono,monospace);color:var(--muted)}
+  .sfx-grid .btn.hit{background:var(--live-soft);border-color:var(--live)}
+  @media (max-width:420px){.sfx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .vol-card{display:flex;align-items:center;gap:12px;padding:12px 16px}
   .vol-card #songMute{font-size:18px;width:44px;justify-content:center}
   .vol-card #songMute.muted{background:var(--live-soft);border-color:var(--live)}
@@ -137,6 +144,17 @@
         <button class="btn sm" id="songMute" type="button" title="Muto / audio">🔊</button>
         <div class="field" style="flex:1;min-width:0"><label for="songVol">Volume base karaoke <span class="mono" id="songVolTxt"></span></label><input type="range" id="songVol" min="0" max="100" step="1"></div>
         <div class="row" style="gap:4px"><button class="btn sm" id="volDown" type="button" aria-label="Abbassa di 10">−</button><button class="btn sm" id="volUp" type="button" aria-label="Alza di 10">+</button></div>
+      </section>
+
+      <section class="card stack sfx-card" aria-label="Effetti sonori">
+        <div class="spread"><span class="label">Effetti sonori</span><button class="btn sm" id="sfxStop" type="button" title="Ferma gli effetti (0)">■ Stop</button></div>
+        <div class="sfx-grid" id="sfxGrid">
+          <button class="btn" type="button" data-sfx="applausi"><span class="e">👏</span>Applausi<kbd>1</kbd></button>
+          <button class="btn" type="button" data-sfx="trombe"><span class="e">🎺</span>Trombe<kbd>2</kbd></button>
+          <button class="btn" type="button" data-sfx="fischi"><span class="e">😙</span>Fischi<kbd>3</kbd></button>
+          <button class="btn" type="button" data-sfx="flop"><span class="e">📉</span>Flop<kbd>4</kbd></button>
+        </div>
+        <div class="field"><label for="sfxVol">Volume effetti <span class="mono" id="sfxVolTxt"></span></label><input type="range" id="sfxVol" min="0" max="100" step="5"></div>
       </section>
 
       <section class="stack">
@@ -409,6 +427,8 @@
     const sv = S.settings.songVolume ?? 100, sm = !!S.settings.songMuted;
     sync("#songVol", sv);
     if (document.activeElement !== $("#songVol")) $("#songVolTxt").textContent = sm ? "muto" : sv + "%";
+    const fx = S.settings.sfxVolume ?? 80;
+    sync("#sfxVol", fx); if (document.activeElement !== $("#sfxVol")) $("#sfxVolTxt").textContent = fx + "%";
     $("#songMute").textContent = sm ? "🔇" : "🔊"; $("#songMute").classList.toggle("muted", sm);
     $("#demoChip").hidden = !S.demo;
     $("#demoTools").hidden = !S.demo;
@@ -522,6 +542,16 @@
   $("#songVol").oninput = (e) => sendVol(+e.target.value);
   $("#volDown").onclick = () => sendVol((S.settings.songVolume ?? 100) - 10);
   $("#volUp").onclick = () => sendVol((S.settings.songVolume ?? 100) + 10);
+  // effetti sonori: suonano sullo schermo
+  function sfx(k) {
+    const b = document.querySelector(`[data-sfx="${k}"]`);
+    if (b) { b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 600); }
+    emit("dj:sfx", k, (r) => { if (r && !r.screens) showNotice("Schermo non collegato: sul computer dello schermo apri /schermo, inserisci il PIN e premi «Attiva schermo»."); });
+  }
+  $("#sfxGrid").onclick = (e) => { const b = e.target.closest("[data-sfx]"); if (b) sfx(b.dataset.sfx); };
+  $("#sfxStop").onclick = () => sfx("stop");
+  $("#sfxVol").oninput = (e) => { $("#sfxVolTxt").textContent = e.target.value + "%"; };
+  $("#sfxVol").onchange = (e) => emit("dj:settings", { sfxVolume: +e.target.value });
   $("#songMute").onclick = () => emit("dj:settings", { songMuted: !S.settings.songMuted });
   $("#bannerText").onchange = (e) => setBanner({ text: e.target.value.trim() || "Stasera alla console" });
   let clearArmed = null;
@@ -700,6 +730,8 @@
     if (e.key === "ArrowUp") { e.preventDefault(); sendVol((S.settings.songVolume ?? 100) + 5); }
     if (e.key === "ArrowDown") { e.preventDefault(); sendVol((S.settings.songVolume ?? 100) - 5); }
     if (e.key === "m" || e.key === "M") emit("dj:settings", { songMuted: !S.settings.songMuted });
+    const fxKey = { 1: "applausi", 2: "trombe", 3: "fischi", 4: "flop", 0: "stop" }[e.key];
+    if (fxKey && !e.metaKey && !e.ctrlKey && !e.altKey) sfx(fxKey);
   });
 })();
 </script>

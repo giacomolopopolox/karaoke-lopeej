@@ -35,6 +35,8 @@ Web app per le serate karaoke di Lopee J.
 
 **Volume della base.** Sotto il palco, in regia, c'è il cursore **Volume base karaoke** con il pulsante muto 🔊/🔇 e i tasti − e +. Agisce in tempo reale sul video dello schermo e resta impostato anche per le canzoni successive. Scorciatoie da tastiera: **freccia su/giù** ±5, **M** muto. La musica d'attesa ha il suo volume separato.
 
+**Effetti sonori.** Sotto il volume della base, in regia, ci sono quattro pulsanti che suonano sullo schermo: 👏 **Applausi**, 🎺 **Trombe** (fanfara con applausi), 😙 **Fischi** (fischi di festa dal pubblico) e 📉 **Flop** (trombone triste «wah wah wah»). Sullo schermo compare anche un'emoji animata in basso. Puoi premerli più volte e sovrapporli; **■ Stop** li ferma tutti. Il cursore **Volume effetti** regola solo loro. Scorciatoie da tastiera: **1** applausi, **2** trombe, **3** fischi, **4** flop, **0** stop. Funzionano solo dopo aver premuto **Attiva schermo** sul computer dello schermo: se te ne dimentichi, la regia ti avvisa.
+
 **Durante la canzone.** In alto a sinistra restano sempre foto, nome di chi canta, titolo e chi viene dopo; in alto a destra il QR per prenotare. Se un video ha il testo in alto, spegni **Sovraimpressioni durante la canzone** nelle impostazioni della regia.
 
 **Chiamata sul palco.** Quando premi **Avanti** o **Chiama sul palco**, le tre barre del logo attraversano lo schermo e appaiono selfie, nome e canzone. Il video parte quando premi **Play**.
