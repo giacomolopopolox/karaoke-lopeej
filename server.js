@@ -37,7 +37,7 @@ const BUILTIN = {
   dj2: { type: "img", url: "/dj-faccia-1.jpg", label: "Lopee J" },
   mic: { type: "mic", label: "Microfono" }
 };
-const DEFAULT_SETTINGS = { banner: { ...DEFAULT_BANNER }, name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
+const DEFAULT_SETTINGS = { banner: { ...DEFAULT_BANNER }, name: "Canta con Lopee J!", open: true, maxPerSinger: 2, minutesPerSong: 4, showSelfies: true, liveOverlay: true, songVolume: 100, songMuted: false, voting: false, minVotes: 3, showRanking: false, filler: { ...DEFAULT_FILLER } };
 
 // Musica d'attesa: accetta il link di un video o di una playlist YouTube
 function parseFiller(raw) {
@@ -304,7 +304,7 @@ function screenView() {
   const cur = current(), show = state.settings.showSelfies;
   const withPic = (q) => ({ ...publicItem(q), selfie: show ? selfieUrl(q) : null });
   return {
-    settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler, liveOverlay: state.settings.liveOverlay, voting: state.settings.voting, showRanking: state.settings.showRanking },
+    settings: { name: state.settings.name, open: state.settings.open, filler: state.settings.filler, liveOverlay: state.settings.liveOverlay, songVolume: state.settings.songVolume, songMuted: state.settings.songMuted, voting: state.settings.voting, showRanking: state.settings.showRanking },
     current: cur ? { ...withPic(cur), videoId: cur.videoId || null, startedAt: cur.startedAt || 0, voteOpen: voteOpen(cur), votes: voteCount(cur) } : null,
     ranking: state.settings.showRanking ? ranking(5) : [],
     banner: bannerView(),
@@ -559,6 +559,8 @@ io.on("connection", (socket) => {
     if (typeof s?.open === "boolean") st.open = s.open;
     if (typeof s?.showSelfies === "boolean") st.showSelfies = s.showSelfies;
     if (typeof s?.liveOverlay === "boolean") st.liveOverlay = s.liveOverlay;
+    if (s?.songVolume != null) st.songVolume = Math.min(100, Math.max(0, parseInt(s.songVolume) || 0));
+    if (typeof s?.songMuted === "boolean") st.songMuted = s.songMuted;
     if (typeof s?.voting === "boolean") st.voting = s.voting;
     if (typeof s?.showRanking === "boolean") st.showRanking = s.showRanking;
     if (s?.minVotes != null) st.minVotes = Math.min(50, Math.max(1, parseInt(s.minVotes) || 1));
