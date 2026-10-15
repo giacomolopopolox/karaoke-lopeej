@@ -31,7 +31,7 @@
   .pic{width:min(38vh,30vw);aspect-ratio:1;border-radius:8px;background:var(--surface-2) center/cover no-repeat;border:clamp(4px,.5vw,8px) solid var(--lime);
     display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:min(14vh,11vw);color:var(--lime);box-shadow:0 0 80px rgba(138,203,44,.25)}
   /* banner del DJ: solo i due ritagli del viso, compatto sotto il titolo */
-  .dj-banner{display:inline-flex;align-items:center;gap:clamp(14px,1.4vw,22px);margin-top:clamp(20px,4vh,44px);padding:clamp(8px,.8vw,12px) clamp(18px,1.8vw,28px) clamp(8px,.8vw,12px) clamp(8px,.8vw,12px);
+  .dj-banner{display:inline-flex;align-items:center;gap:clamp(14px,1.4vw,22px);margin-top:clamp(14px,3vh,44px);padding:clamp(8px,.8vw,12px) clamp(18px,1.8vw,28px) clamp(8px,.8vw,12px) clamp(8px,.8vw,12px);
     background:rgba(23,27,17,.82);border-left:6px solid var(--lime);border-radius:6px}
   .dj-banner .faces{display:flex;flex:none}
   .dj-banner .face{width:clamp(60px,9vh,112px);aspect-ratio:1;border-radius:50%;background:var(--surface-2) center/cover no-repeat;border:3px solid var(--lime);box-shadow:0 0 0 4px rgba(11,14,8,.9)}
@@ -47,20 +47,23 @@
   .dj-banner .logo{display:block;height:clamp(22px,3.4vh,44px);width:auto}
   .kicker{display:flex;align-items:center;gap:14px;font-family:var(--f-display);font-weight:600;font-size:clamp(14px,1.6vw,24px);letter-spacing:.2em;text-transform:uppercase;color:var(--lime)}
   .kicker .bars{width:clamp(18px,1.8vw,28px);height:clamp(14px,1.4vw,22px);background:linear-gradient(var(--lime) 0 27%,transparent 27% 36.5%,var(--lime) 36.5% 63.5%,transparent 63.5% 73%,var(--lime) 73% 100%)}
-  .who{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:clamp(44px,8.5vw,140px);line-height:.95;margin-top:clamp(8px,1.4vh,18px);text-wrap:balance;overflow-wrap:anywhere}
-  .what{font-size:clamp(20px,2.8vw,42px);color:var(--muted);margin-top:clamp(10px,2vh,22px);text-wrap:balance}
+  .who{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:clamp(44px,min(6.4vw,12vh),140px);line-height:.95;margin-top:clamp(8px,1.4vh,18px);text-wrap:balance;overflow-wrap:anywhere}
+  .what{font-size:clamp(17px,min(2.4vw,4.2vh),42px);color:var(--muted);margin-top:clamp(10px,2vh,22px);text-wrap:balance}
   .what b{color:var(--fg);font-weight:600}
 
   .foot{display:flex;gap:clamp(16px,3vw,40px);align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
-  .upnext{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:clamp(16px,1.7vw,26px)}
+  .upnext{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:clamp(4px,.8vh,8px);font-size:clamp(14px,min(1.7vw,2.6vh),26px)}
   .upnext li{display:flex;gap:14px;align-items:center}
   .upnext .n{font-family:var(--f-mono);color:var(--lime);min-width:1.4em}
   .upnext .avatar{width:1.9em;height:1.9em;font-size:.7em}
   .upnext span.t{color:var(--muted)}
-  .book{display:flex;gap:16px;align-items:center;background:var(--surface);border-left:6px solid var(--lime);padding:14px 18px 14px 14px;border-radius:4px}
-  .book img{width:clamp(96px,10vw,160px);height:auto;border-radius:3px;background:#fff;padding:5px}
-  .book b{display:block;font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:clamp(16px,1.6vw,26px)}
-  .book span{color:var(--muted);font-family:var(--f-mono);font-size:clamp(12px,1.1vw,17px);overflow-wrap:anywhere}
+  /* QR grande (il triplo di prima): colonna a destra, a tutta altezza */
+  .overlay{grid-template-columns:minmax(0,1fr) auto;column-gap:clamp(24px,3vw,56px)}
+  .overlay > .brand,.overlay > .hero,.overlay > .foot{grid-column:1}
+  .book{grid-column:2;grid-row:1 / 4;align-self:center;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;background:var(--surface);border-top:8px solid var(--lime);padding:clamp(14px,1.4vw,24px);border-radius:6px}
+  .book img{width:min(clamp(288px,30vw,480px),62vh);height:auto;border-radius:4px;background:#fff;padding:clamp(8px,.8vw,14px)}
+  .book b{display:block;font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:clamp(20px,2.2vw,38px)}
+  .book span{display:block;margin-top:4px;color:var(--muted);font-family:var(--f-mono);font-size:clamp(13px,1.2vw,20px);overflow-wrap:anywhere}
 
   /* la chiamata sul palco: le tre barre della E attraversano lo schermo */
   .wipe{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:5vh;pointer-events:none;z-index:5}
@@ -87,7 +90,7 @@
   .live-singer .s{color:var(--muted);font-size:clamp(13px,1.2vw,19px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .live-singer .s b{color:var(--fg);font-weight:600}
   .live-qr{right:clamp(12px,2vw,28px);border-right:5px solid var(--lime);flex-direction:row-reverse;padding-left:clamp(12px,1.2vw,18px)}
-  .live-qr img{width:clamp(84px,11vh,140px);height:auto;background:#fff;border-radius:3px;padding:4px;flex:none}
+  .live-qr img{width:clamp(168px,22vh,280px);height:auto;background:#fff;border-radius:3px;padding:4px;flex:none}
   .live-qr b{display:block;font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:clamp(13px,1.2vw,19px);line-height:1.15;text-align:right}
   .live-qr span{display:block;color:var(--lime);font-family:var(--f-display);font-weight:600;font-size:clamp(11px,1vw,15px);letter-spacing:.14em;text-transform:uppercase;text-align:right;margin-top:4px}
   .tools{position:absolute;right:16px;bottom:16px;display:flex;gap:8px;opacity:0;transition:opacity .3s;z-index:6}
@@ -175,8 +178,8 @@
     <div class="hero" id="hero"></div>
     <div class="foot">
       <div id="nextBox"></div>
-      <div class="book"><img src="/qr.svg" alt=""><div><b>Prenota la tua canzone</b><span id="guestUrl"></span></div></div>
     </div>
+    <div class="book"><img src="/qr.svg" alt="QR code per prenotare"><div><b>Prenota la tua canzone</b><span id="guestUrl"></span></div></div>
     <div class="wipe" aria-hidden="true"><i></i><i></i><i></i></div>
   </div>
   <div class="tools"><button class="btn sm" id="fsBtn">Schermo intero</button></div>
